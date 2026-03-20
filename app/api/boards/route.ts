@@ -2,17 +2,25 @@ import { NextRequest, NextResponse } from 'next/server'
 import { prisma } from '@/lib/prisma'
 import { pusher } from '@/lib/pusher'
 
+function generateTitle() {
+  const now = new Date()
+  return `Sprint Retro · ${now.toLocaleDateString('en-US', {
+    month: 'long',
+    day: 'numeric',
+    year: 'numeric',
+  })}`
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { title, previousBoard } = body as {
-      title?: string
+    const { previousBoard } = body as {
       previousBoard?: string
     }
 
     const board = await prisma.board.create({
       data: {
-        title: title?.trim() || 'Sprint Retro',
+        title: generateTitle(),
         previousBoard: previousBoard?.trim() || null,
       },
     })

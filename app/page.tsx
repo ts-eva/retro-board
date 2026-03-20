@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation'
 
 export default function HomePage() {
   const router = useRouter()
-  const [title, setTitle] = useState('')
   const [previousBoard, setPreviousBoard] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -20,7 +19,6 @@ export default function HomePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          title: title.trim() || undefined,
           previousBoard: previousBoard.trim() || undefined,
         }),
       })
@@ -53,7 +51,7 @@ export default function HomePage() {
       <div
         style={{
           width: '100%',
-          maxWidth: '28rem',
+          maxWidth: '26rem',
           display: 'flex',
           flexDirection: 'column',
           gap: '2rem',
@@ -66,13 +64,13 @@ export default function HomePage() {
               fontSize: '2.5rem',
               fontWeight: '700',
               letterSpacing: '-0.03em',
-              color: '#1c1917',
+              color: '#2D3748',
               marginBottom: '0.5rem',
             }}
           >
             Retro Board
           </h1>
-          <p style={{ color: '#78716c', fontSize: '1rem' }}>
+          <p style={{ color: '#718096', fontSize: '1rem', margin: 0 }}>
             Run a smooth sprint retrospective with your team
           </p>
         </div>
@@ -80,38 +78,8 @@ export default function HomePage() {
         {/* Form */}
         <form
           onSubmit={handleStart}
-          style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}
+          style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
         >
-          {/* Board title */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            <label
-              htmlFor="title"
-              style={{ fontSize: '0.875rem', fontWeight: '500', color: '#44403c' }}
-            >
-              Board Title
-            </label>
-            <input
-              id="title"
-              type="text"
-              placeholder="Sprint Retro"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              style={{
-                width: '100%',
-                padding: '0.625rem 0.875rem',
-                borderRadius: '0.5rem',
-                border: '1.5px solid #e7e5e4',
-                background: '#fff',
-                fontSize: '0.9375rem',
-                color: '#1c1917',
-                outline: 'none',
-                transition: 'border-color 0.15s',
-              }}
-              onFocus={(e) => (e.target.style.borderColor = '#a78bfa')}
-              onBlur={(e) => (e.target.style.borderColor = '#e7e5e4')}
-            />
-          </div>
-
           {/* Previous board */}
           <div
             style={{
@@ -119,18 +87,19 @@ export default function HomePage() {
               flexDirection: 'column',
               gap: '0.375rem',
               padding: '1rem',
-              borderRadius: '0.75rem',
-              border: '1.5px dashed #d6d3d1',
+              borderRadius: '0.875rem',
+              border: '1.5px dashed #CBD5E0',
+              background: '#fff',
             }}
           >
             <label
               htmlFor="previousBoard"
-              style={{ fontSize: '0.875rem', fontWeight: '500', color: '#44403c' }}
+              style={{ fontSize: '0.875rem', fontWeight: '500', color: '#4A5568' }}
             >
               Continue from previous session?{' '}
-              <span style={{ fontWeight: '400', color: '#a8a29e' }}>(optional)</span>
+              <span style={{ fontWeight: '400', color: '#A0AEC0' }}>(optional)</span>
             </label>
-            <p style={{ fontSize: '0.8125rem', color: '#a8a29e', margin: '0 0 0.5rem' }}>
+            <p style={{ fontSize: '0.8125rem', color: '#A0AEC0', margin: '0 0 0.5rem' }}>
               Paste a previous board ID to carry over unresolved action items.
             </p>
             <input
@@ -143,16 +112,17 @@ export default function HomePage() {
                 width: '100%',
                 padding: '0.625rem 0.875rem',
                 borderRadius: '0.5rem',
-                border: '1.5px solid #e7e5e4',
-                background: '#fff',
+                border: '1.5px solid #E2E8F0',
+                background: '#F7F9FC',
                 fontSize: '0.875rem',
-                color: '#1c1917',
+                color: '#2D3748',
                 fontFamily: 'var(--font-geist-mono), monospace',
                 outline: 'none',
                 transition: 'border-color 0.15s',
+                boxSizing: 'border-box',
               }}
-              onFocus={(e) => (e.target.style.borderColor = '#a78bfa')}
-              onBlur={(e) => (e.target.style.borderColor = '#e7e5e4')}
+              onFocus={(e) => (e.target.style.borderColor = '#8A9CC7')}
+              onBlur={(e) => (e.target.style.borderColor = '#E2E8F0')}
             />
           </div>
 
@@ -162,9 +132,9 @@ export default function HomePage() {
               style={{
                 padding: '0.75rem 1rem',
                 borderRadius: '0.5rem',
-                background: '#fff1f2',
-                border: '1.5px solid #fecdd3',
-                color: '#e11d48',
+                background: '#FFF5F5',
+                border: '1.5px solid #FEB2B2',
+                color: '#C53030',
                 fontSize: '0.875rem',
               }}
             >
@@ -178,8 +148,8 @@ export default function HomePage() {
             disabled={loading}
             style={{
               width: '100%',
-              padding: '0.75rem 1.5rem',
-              borderRadius: '0.625rem',
+              padding: '0.875rem 1.5rem',
+              borderRadius: '0.75rem',
               border: 'none',
               background: loading ? '#8A9CC7' : '#5B7FA6',
               color: '#fff',
@@ -201,7 +171,7 @@ export default function HomePage() {
         </form>
 
         {/* Footer note */}
-        <p style={{ textAlign: 'center', fontSize: '0.8125rem', color: '#a8a29e' }}>
+        <p style={{ textAlign: 'center', fontSize: '0.8125rem', color: '#A0AEC0', margin: 0 }}>
           Share the board URL with your team to collaborate in real time
         </p>
       </div>
