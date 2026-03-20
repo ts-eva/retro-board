@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation'
 
 export default function HomePage() {
   const router = useRouter()
+  const [team, setTeam] = useState('')
   const [previousBoard, setPreviousBoard] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -19,6 +20,7 @@ export default function HomePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          team: team.trim() || undefined,
           previousBoard: previousBoard.trim() || undefined,
         }),
       })
@@ -80,6 +82,38 @@ export default function HomePage() {
           onSubmit={handleStart}
           style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}
         >
+          {/* Team name */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+            <label
+              htmlFor="team"
+              style={{ fontSize: '0.875rem', fontWeight: '500', color: '#4A5568' }}
+            >
+              Team name{' '}
+              <span style={{ fontWeight: '400', color: '#A0AEC0' }}>(optional)</span>
+            </label>
+            <input
+              id="team"
+              type="text"
+              placeholder="e.g. Frontend, Platform, Growth…"
+              value={team}
+              onChange={(e) => setTeam(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.625rem 0.875rem',
+                borderRadius: '0.5rem',
+                border: '1.5px solid #E2E8F0',
+                background: '#fff',
+                fontSize: '0.9375rem',
+                color: '#2D3748',
+                outline: 'none',
+                transition: 'border-color 0.15s',
+                boxSizing: 'border-box',
+              }}
+              onFocus={(e) => (e.target.style.borderColor = '#8A9CC7')}
+              onBlur={(e) => (e.target.style.borderColor = '#E2E8F0')}
+            />
+          </div>
+
           {/* Previous board */}
           <div
             style={{
