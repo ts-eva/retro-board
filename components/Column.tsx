@@ -132,6 +132,10 @@ export default function Column({
     <div
       className="board-column"
       style={{
+        display: 'flex',
+        flexDirection: 'column',
+        flex: '1 1 0',
+        minWidth: '220px',
         background: meta.tint,
         borderRadius: '1.25rem',
         border: `1.5px solid ${meta.color}30`,
