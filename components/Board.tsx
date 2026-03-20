@@ -2,12 +2,14 @@
 
 import { useEffect, useState, useRef, useCallback } from 'react'
 import { getPusherClient, setPusherUserName } from '@/lib/pusher-client'
+import { motion, AnimatePresence } from 'framer-motion'
 import type { PresenceChannel } from 'pusher-js'
 import Column from './Column'
 import LinkOverlay from './LinkOverlay'
 import PreviousActionItems from './PreviousActionItems'
 import UserBadge from './UserBadge'
 import NameModal from './NameModal'
+import TimerWidget from './TimerWidget'
 import type { Board as BoardType, BoardPageData, Card, CardLink, ColumnType } from '@/types'
 
 const COLUMNS: ColumnType[] = ['WENT_WELL', 'WENT_POORLY', 'IDEAS', 'ACTION_ITEMS']
@@ -40,6 +42,9 @@ export default function Board({ initialData }: BoardProps) {
   const [author, setAuthor] = useState<string>('')
   const [nameConfirmed, setNameConfirmed] = useState(false)
   const [members, setMembers] = useState<string[]>([])
+  const [timerEnd, setTimerEnd] = useState<number | null>(null)
+  const [showCalm, setShowCalm] = useState(false)
+  const prevTimerEnd = useRef<number | null>(null)
 
   const boardRef = useRef<HTMLDivElement>(null)
   const boardId = board.id
@@ -140,11 +145,32 @@ export default function Board({ initialData }: BoardProps) {
       setLinks((prev) => prev.filter((l) => l.id !== data.linkId))
     })
 
+    channel.bind('timer-started', (data: { endsAt: number }) => {
+      setTimerEnd(data.endsAt)
+    })
+
+    channel.bind('timer-stopped', () => {
+      setTimerEnd(null)
+    })
+
     return () => {
       channel.unbind_all()
       pusher.unsubscribe(`board-${boardId}`)
     }
   }, [boardId])
+
+  // Trigger calming overlay when timer expires
+  useEffect(() => {
+    if (timerEnd === null) return
+    const msLeft = timerEnd - Date.now()
+    if (msLeft <= 0) return
+    const id = setTimeout(() => {
+      setShowCalm(true)
+      setTimerEnd(null)
+      setTimeout(() => setShowCalm(false), 5000)
+    }, msLeft)
+    return () => clearTimeout(id)
+  }, [timerEnd])
 
   // Presence channel — subscribe after name is confirmed
   useEffect(() => {
@@ -337,6 +363,14 @@ export default function Board({ initialData }: BoardProps) {
             </div>
           )}
 
+          {/* Timer */}
+          <TimerWidget
+            boardId={boardId}
+            timerEnd={timerEnd}
+            onStart={setTimerEnd}
+            onStop={() => setTimerEnd(null)}
+          />
+
           {/* Copy ID */}
           <button
             onClick={() => {
@@ -470,6 +504,51 @@ export default function Board({ initialData }: BoardProps) {
           </div>
         ))}
       </div>
+
+      {/* Calming timer-end overlay */}
+      <AnimatePresence>
+        {showCalm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 1.2 }}
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background:
+                'radial-gradient(ellipse at center, rgba(196,185,253,0.35) 0%, rgba(253,230,138,0.2) 60%, transparent 100%)',
+              backdropFilter: 'blur(3px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 150,
+              pointerEvents: 'none',
+            }}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.92 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ delay: 0.3, duration: 0.8 }}
+              style={{ textAlign: 'center' }}
+            >
+              <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>✨</div>
+              <p
+                style={{
+                  fontSize: '1.25rem',
+                  fontWeight: '600',
+                  color: '#4c1d95',
+                  margin: 0,
+                  letterSpacing: '-0.02em',
+                }}
+              >
+                Time&apos;s up
+              </p>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <style>{`
         @keyframes fadeInUp {
