@@ -24,19 +24,19 @@ body {
 
 /* ── Responsive board layout (media query overrides only) ── */
 
-/* Tablet: 2-column grid */
-@media (min-width: 640px) and (max-width: 1024px) {
+/* Tablet: 2×2 grid — kicks in whenever 4 columns don't fit */
+@media (max-width: 960px) {
   .board-columns {
     flex-wrap: wrap !important;
   }
   .board-column {
     flex: 1 1 calc(50% - 0.5rem) !important;
-    min-width: 260px !important;
+    min-width: 0 !important;
   }
 }
 
 /* Mobile: single-column stack */
-@media (max-width: 639px) {
+@media (max-width: 479px) {
   .board-header {
     padding: 0.625rem 1rem !important;
     flex-wrap: wrap !important;
@@ -61,5 +61,6 @@ body {
     flex: none !important;
     width: 100% !important;
     min-width: 0 !important;
+    min-height: 240px !important;
   }
 }
