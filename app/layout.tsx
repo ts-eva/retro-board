@@ -29,7 +29,7 @@ export default function RootLayout({
     >
       <body
         className="min-h-full flex flex-col"
-        style={{ background: '#FAFAF9', color: '#1c1917' }}
+        style={{ background: '#F2F4F7', color: '#2D3748' }}
       >
         {children}
       </body>

@@ -238,7 +238,7 @@ export default function Board({ initialData }: BoardProps) {
     <div
       style={{
         minHeight: '100vh',
-        background: '#FAFAF9',
+        background: '#F2F4F7',
         display: 'flex',
         flexDirection: 'column',
       }}
@@ -251,7 +251,7 @@ export default function Board({ initialData }: BoardProps) {
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '0.75rem 1.5rem',
-          borderBottom: '1.5px solid #f0ede9',
+          borderBottom: '1.5px solid #E8ECF2',
           background: '#fff',
           position: 'sticky',
           top: 0,
@@ -319,10 +319,10 @@ export default function Board({ initialData }: BoardProps) {
             style={{
               padding: '0.375rem 0.75rem',
               borderRadius: '0.5rem',
-              border: `1.5px solid ${linkMode ? '#7c3aed' : '#e7e5e4'}`,
-              background: linkMode ? '#ede9fe' : '#fff',
+              border: `1.5px solid ${linkMode ? '#8A9CC7' : '#E8ECF2'}`,
+              background: linkMode ? '#EEF1F9' : '#fff',
               fontSize: '0.8125rem',
-              color: linkMode ? '#6d28d9' : '#44403c',
+              color: linkMode ? '#384E82' : '#44403c',
               cursor: 'pointer',
               fontWeight: '500',
               display: 'flex',
@@ -344,11 +344,11 @@ export default function Board({ initialData }: BoardProps) {
       {linkMode && (
         <div
           style={{
-            background: '#ede9fe',
-            borderBottom: '1.5px solid #c4b5fd',
+            background: '#EEF1F9',
+            borderBottom: '1.5px solid #8A9CC7',
             padding: '0.5rem 1.5rem',
             fontSize: '0.8125rem',
-            color: '#6d28d9',
+            color: '#384E82',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',

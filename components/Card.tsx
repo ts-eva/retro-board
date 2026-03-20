@@ -4,18 +4,12 @@ import { useState, useRef } from 'react'
 import { motion } from 'framer-motion'
 import type { Card as CardType, ColumnType, Reaction } from '@/types'
 
-const COLUMN_COLORS: Record<ColumnType, string> = {
-  WENT_WELL: '#86EFAC',
-  WENT_POORLY: '#FDA4AF',
-  IDEAS: '#FCD34D',
-  ACTION_ITEMS: '#C4B5FD',
-}
-
 const EMOJIS = ['👍', '❤️', '🔥', '💡'] as const
 
 interface CardProps {
   card: CardType
   author: string
+  columnColor: string
   linkMode: boolean
   isSelected: boolean
   onSelect: () => void
@@ -39,6 +33,7 @@ function formatRelativeTime(dateStr: string): string {
 export default function Card({
   card,
   author,
+  columnColor,
   linkMode,
   isSelected,
   onSelect,
@@ -51,7 +46,7 @@ export default function Card({
   const [savingReaction, setSavingReaction] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  const borderColor = COLUMN_COLORS[card.column]
+  const borderColor = columnColor
 
   async function saveEdit() {
     const trimmed = editContent.trim()
@@ -144,14 +139,14 @@ export default function Card({
       style={{
         position: 'relative',
         background: '#fff',
-        borderRadius: '0.75rem',
-        border: `1.5px solid ${isSelected ? '#7c3aed' : hovering && linkMode ? '#a78bfa' : '#f0ede9'}`,
+        borderRadius: '0.875rem',
+        border: `1.5px solid ${isSelected ? borderColor : hovering && linkMode ? `${borderColor}80` : `${borderColor}30`}`,
         borderLeft: `4px solid ${borderColor}`,
         boxShadow: isSelected
-          ? '0 0 0 3px #ede9fe'
+          ? `0 0 0 3px ${borderColor}25`
           : hovering
-          ? '0 4px 12px rgba(0,0,0,0.08)'
-          : '0 1px 4px rgba(0,0,0,0.05)',
+          ? '0 4px 16px rgba(0,0,0,0.07)'
+          : '0 1px 4px rgba(0,0,0,0.04)',
         cursor: linkMode ? 'pointer' : 'default',
         transition: 'box-shadow 0.15s, border-color 0.15s',
         overflow: 'hidden',
@@ -284,11 +279,11 @@ export default function Card({
                   gap: '0.25rem',
                   padding: '0.1875rem 0.5rem',
                   borderRadius: '9999px',
-                  border: `1.5px solid ${mine ? '#a78bfa' : '#e7e5e4'}`,
-                  background: mine ? '#ede9fe' : '#f9f9f8',
+                  border: `1.5px solid ${mine ? borderColor : `${borderColor}30`}`,
+                  background: mine ? `${borderColor}20` : '#f9f9f8',
                   fontSize: '0.75rem',
                   cursor: savingReaction ? 'not-allowed' : 'pointer',
-                  color: mine ? '#6d28d9' : '#78716c',
+                  color: mine ? borderColor : '#78716c',
                   fontWeight: mine ? '600' : '400',
                   transition: 'all 0.15s',
                   opacity: savingReaction && savingReaction !== emoji ? 0.6 : 1,

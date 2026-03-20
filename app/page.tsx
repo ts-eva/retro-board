@@ -47,7 +47,7 @@ export default function HomePage() {
         justifyContent: 'center',
         minHeight: '100vh',
         padding: '1rem',
-        background: '#FAFAF9',
+        background: '#F2F4F7',
       }}
     >
       <div
@@ -181,7 +181,7 @@ export default function HomePage() {
               padding: '0.75rem 1.5rem',
               borderRadius: '0.625rem',
               border: 'none',
-              background: loading ? '#c4b5fd' : '#7c3aed',
+              background: loading ? '#8A9CC7' : '#5B7FA6',
               color: '#fff',
               fontSize: '1rem',
               fontWeight: '600',
@@ -190,10 +190,10 @@ export default function HomePage() {
               letterSpacing: '-0.01em',
             }}
             onMouseEnter={(e) => {
-              if (!loading) (e.currentTarget.style.background = '#6d28d9')
+              if (!loading) (e.currentTarget.style.background = '#4A6E95')
             }}
             onMouseLeave={(e) => {
-              if (!loading) (e.currentTarget.style.background = '#7c3aed')
+              if (!loading) (e.currentTarget.style.background = '#5B7FA6')
             }}
           >
             {loading ? 'Creating board…' : 'Start Retro'}

@@ -132,7 +132,7 @@ export default function NameModal({ onConfirm }: NameModalProps) {
               padding: '0.75rem',
               borderRadius: '0.75rem',
               border: 'none',
-              background: '#7c3aed',
+              background: '#5B7FA6',
               color: '#fff',
               fontSize: '0.9375rem',
               fontWeight: '600',
@@ -140,8 +140,8 @@ export default function NameModal({ onConfirm }: NameModalProps) {
               letterSpacing: '-0.01em',
               transition: 'background 0.15s',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = '#6d28d9')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = '#7c3aed')}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#4A6E95')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = '#5B7FA6')}
           >
             Join as {name}
           </button>

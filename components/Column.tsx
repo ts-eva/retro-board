@@ -4,26 +4,66 @@ import { useState, useRef } from 'react'
 import CardComponent from './Card'
 import type { Card, CardLink, ColumnType } from '@/types'
 
-const COLUMN_META: Record<ColumnType, { label: string; color: string; placeholder: string }> = {
+const COLUMN_META: Record<ColumnType, {
+  label: string
+  color: string       // accent / border
+  tint: string        // column bg tint
+  textColor: string   // label text
+  prompts: string[]
+  placeholder: string
+  emoji: string
+}> = {
   WENT_WELL: {
     label: 'Went Well',
-    color: '#86EFAC',
+    color: '#7FB5A0',
+    tint: '#F2F7F5',
+    textColor: '#2D6A58',
+    emoji: '🌿',
     placeholder: 'What went well this sprint?',
+    prompts: [
+      'A win worth celebrating?',
+      'What should we keep doing?',
+      'Great teamwork moment?',
+    ],
   },
   WENT_POORLY: {
     label: 'Went Poorly',
-    color: '#FDA4AF',
+    color: '#C4908A',
+    tint: '#F7F3F2',
+    textColor: '#7A3F3A',
+    emoji: '🌧️',
     placeholder: 'What could have gone better?',
+    prompts: [
+      'What slowed us down?',
+      'A blocker we didn\'t address?',
+      'Something that caused frustration?',
+    ],
   },
   IDEAS: {
     label: 'Ideas',
-    color: '#FCD34D',
+    color: '#C4A96B',
+    tint: '#F7F5EF',
+    textColor: '#7A6030',
+    emoji: '💡',
     placeholder: 'Any ideas to try next sprint?',
+    prompts: [
+      'An experiment to try?',
+      'A tool or process to explore?',
+      'What would make us faster?',
+    ],
   },
   ACTION_ITEMS: {
     label: 'Action Items',
-    color: '#C4B5FD',
+    color: '#8A9CC7',
+    tint: '#F2F4F9',
+    textColor: '#384E82',
+    emoji: '🎯',
     placeholder: 'What action should we take?',
+    prompts: [
+      'One thing we commit to changing?',
+      'Who will own this?',
+      'First concrete step?',
+    ],
   },
 }
 
@@ -88,6 +128,11 @@ export default function Column({
     }
   }
 
+  function usePrompt(prompt: string) {
+    setNewContent(prompt)
+    textareaRef.current?.focus()
+  }
+
   return (
     <div
       style={{
@@ -96,21 +141,15 @@ export default function Column({
         flex: '1 1 0',
         minWidth: '220px',
         maxWidth: '320px',
-        background: '#fff',
-        borderRadius: '1rem',
-        border: '1.5px solid #f0ede9',
+        background: meta.tint,
+        borderRadius: '1.25rem',
+        border: `1.5px solid ${meta.color}30`,
         overflow: 'hidden',
-        boxShadow: '0 1px 6px rgba(0,0,0,0.04)',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.05)',
       }}
     >
       {/* Color accent bar */}
-      <div
-        style={{
-          height: '4px',
-          background: meta.color,
-          flexShrink: 0,
-        }}
-      />
+      <div style={{ height: '3px', background: meta.color, flexShrink: 0 }} />
 
       {/* Header */}
       <div
@@ -119,25 +158,28 @@ export default function Column({
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '0.875rem 1rem 0.625rem',
-          borderBottom: '1.5px solid #f5f5f4',
         }}
       >
         <span
           style={{
             fontSize: '0.875rem',
             fontWeight: '600',
-            color: '#1c1917',
+            color: meta.textColor,
             letterSpacing: '-0.01em',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.375rem',
           }}
         >
-          {meta.label}
+          <span>{meta.emoji}</span>
+          <span>{meta.label}</span>
         </span>
         <span
           style={{
             fontSize: '0.75rem',
             fontWeight: '500',
-            color: '#a8a29e',
-            background: '#f5f5f4',
+            color: meta.textColor,
+            background: `${meta.color}25`,
             borderRadius: '9999px',
             padding: '0.125rem 0.5rem',
           }}
@@ -146,12 +188,54 @@ export default function Column({
         </span>
       </div>
 
+      {/* Prompt chips */}
+      <div
+        style={{
+          padding: '0 0.75rem 0.625rem',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '0.375rem',
+        }}
+      >
+        {meta.prompts.map((prompt) => (
+          <button
+            key={prompt}
+            onClick={() => !linkMode && usePrompt(prompt)}
+            disabled={linkMode}
+            style={{
+              fontSize: '0.6875rem',
+              padding: '0.25rem 0.625rem',
+              borderRadius: '9999px',
+              border: `1px solid ${meta.color}60`,
+              background: `${meta.color}15`,
+              color: meta.textColor,
+              cursor: linkMode ? 'default' : 'pointer',
+              opacity: linkMode ? 0.5 : 1,
+              transition: 'background 0.15s, border-color 0.15s',
+              lineHeight: 1.4,
+            }}
+            onMouseEnter={(e) => {
+              if (!linkMode) {
+                e.currentTarget.style.background = `${meta.color}30`
+                e.currentTarget.style.borderColor = meta.color
+              }
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = `${meta.color}15`
+              e.currentTarget.style.borderColor = `${meta.color}60`
+            }}
+          >
+            {prompt}
+          </button>
+        ))}
+      </div>
+
       {/* Cards */}
       <div
         style={{
           flex: 1,
           overflowY: 'auto',
-          padding: '0.75rem',
+          padding: '0 0.75rem',
           display: 'flex',
           flexDirection: 'column',
           gap: '0.625rem',
@@ -162,6 +246,7 @@ export default function Column({
             key={card.id}
             card={card}
             author={author}
+            columnColor={meta.color}
             linkMode={linkMode}
             isSelected={selectedCard === card.id}
             onSelect={() => onSelectCard(card.id)}
@@ -175,7 +260,6 @@ export default function Column({
       <div
         style={{
           padding: '0.75rem',
-          borderTop: '1.5px solid #f5f5f4',
           display: 'flex',
           gap: '0.5rem',
           alignItems: 'flex-end',
@@ -197,18 +281,18 @@ export default function Column({
             flex: 1,
             resize: 'none',
             padding: '0.5rem 0.625rem',
-            borderRadius: '0.5rem',
-            border: '1.5px solid #e7e5e4',
+            borderRadius: '0.625rem',
+            border: `1.5px solid ${meta.color}50`,
             fontSize: '0.8125rem',
             lineHeight: '1.5',
-            color: '#1c1917',
+            color: '#2D3748',
             outline: 'none',
             fontFamily: 'inherit',
-            background: '#fafaf9',
+            background: '#fff',
             transition: 'border-color 0.15s',
           }}
           onFocus={(e) => (e.target.style.borderColor = meta.color)}
-          onBlur={(e) => (e.target.style.borderColor = '#e7e5e4')}
+          onBlur={(e) => (e.target.style.borderColor = `${meta.color}50`)}
           disabled={submitting || linkMode}
         />
         <button
@@ -218,15 +302,18 @@ export default function Column({
           style={{
             width: '2rem',
             height: '2rem',
-            borderRadius: '0.5rem',
+            borderRadius: '0.625rem',
             border: 'none',
-            background:
-              !newContent.trim() || submitting || linkMode ? '#f5f5f4' : meta.color,
-            color:
-              !newContent.trim() || submitting || linkMode ? '#d6d3d1' : '#1c1917',
+            background: !newContent.trim() || submitting || linkMode
+              ? `${meta.color}30`
+              : meta.color,
+            color: !newContent.trim() || submitting || linkMode
+              ? `${meta.color}90`
+              : '#fff',
             fontSize: '0.875rem',
-            cursor:
-              !newContent.trim() || submitting || linkMode ? 'not-allowed' : 'pointer',
+            cursor: !newContent.trim() || submitting || linkMode
+              ? 'not-allowed'
+              : 'pointer',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
