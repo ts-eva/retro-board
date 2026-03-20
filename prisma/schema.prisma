@@ -1,0 +1,48 @@
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("TURSO_DATABASE_URL")
+}
+
+model Board {
+  id            String   @id @default(cuid())
+  title         String   @default("Sprint Retro")
+  createdAt     DateTime @default(now())
+  previousBoard String?
+  cards         Card[]
+}
+
+model Card {
+  id        String     @id @default(cuid())
+  boardId   String
+  board     Board      @relation(fields: [boardId], references: [id])
+  column    String
+  content   String
+  author    String
+  resolved  Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  reactions Reaction[]
+  linksFrom CardLink[] @relation("LinkFrom")
+  linksTo   CardLink[] @relation("LinkTo")
+}
+
+model Reaction {
+  id     String @id @default(cuid())
+  cardId String
+  card   Card   @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  emoji  String
+  author String
+  @@unique([cardId, emoji, author])
+}
+
+model CardLink {
+  id       String @id @default(cuid())
+  fromId   String
+  toId     String
+  fromCard Card   @relation("LinkFrom", fields: [fromId], references: [id], onDelete: Cascade)
+  toCard   Card   @relation("LinkTo", fields: [toId], references: [id], onDelete: Cascade)
+}

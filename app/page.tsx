@@ -1,65 +1,210 @@
-import Image from "next/image";
+'use client'
 
-export default function Home() {
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
+
+export default function HomePage() {
+  const router = useRouter()
+  const [title, setTitle] = useState('')
+  const [previousBoard, setPreviousBoard] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+
+  async function handleStart(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    try {
+      const res = await fetch('/api/boards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: title.trim() || undefined,
+          previousBoard: previousBoard.trim() || undefined,
+        }),
+      })
+
+      if (!res.ok) {
+        const data = await res.json()
+        throw new Error(data.error || 'Failed to create board')
+      }
+
+      const board = await res.json()
+      router.push(`/board/${board.id}`)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Something went wrong')
+      setLoading(false)
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <main
+      style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        minHeight: '100vh',
+        padding: '1rem',
+        background: '#FAFAF9',
+      }}
+    >
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '28rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '2rem',
+        }}
+      >
+        {/* Header */}
+        <div style={{ textAlign: 'center' }}>
+          <h1
+            style={{
+              fontSize: '2.5rem',
+              fontWeight: '700',
+              letterSpacing: '-0.03em',
+              color: '#1c1917',
+              marginBottom: '0.5rem',
+            }}
+          >
+            Retro Board
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p style={{ color: '#78716c', fontSize: '1rem' }}>
+            Run a smooth sprint retrospective with your team
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
+
+        {/* Form */}
+        <form
+          onSubmit={handleStart}
+          style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}
+        >
+          {/* Board title */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+            <label
+              htmlFor="title"
+              style={{ fontSize: '0.875rem', fontWeight: '500', color: '#44403c' }}
+            >
+              Board Title
+            </label>
+            <input
+              id="title"
+              type="text"
+              placeholder="Sprint Retro"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.625rem 0.875rem',
+                borderRadius: '0.5rem',
+                border: '1.5px solid #e7e5e4',
+                background: '#fff',
+                fontSize: '0.9375rem',
+                color: '#1c1917',
+                outline: 'none',
+                transition: 'border-color 0.15s',
+              }}
+              onFocus={(e) => (e.target.style.borderColor = '#a78bfa')}
+              onBlur={(e) => (e.target.style.borderColor = '#e7e5e4')}
             />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
+          </div>
+
+          {/* Previous board */}
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '0.375rem',
+              padding: '1rem',
+              borderRadius: '0.75rem',
+              border: '1.5px dashed #d6d3d1',
+            }}
           >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+            <label
+              htmlFor="previousBoard"
+              style={{ fontSize: '0.875rem', fontWeight: '500', color: '#44403c' }}
+            >
+              Continue from previous session?{' '}
+              <span style={{ fontWeight: '400', color: '#a8a29e' }}>(optional)</span>
+            </label>
+            <p style={{ fontSize: '0.8125rem', color: '#a8a29e', margin: '0 0 0.5rem' }}>
+              Paste a previous board ID to carry over unresolved action items.
+            </p>
+            <input
+              id="previousBoard"
+              type="text"
+              placeholder="Previous board ID"
+              value={previousBoard}
+              onChange={(e) => setPreviousBoard(e.target.value)}
+              style={{
+                width: '100%',
+                padding: '0.625rem 0.875rem',
+                borderRadius: '0.5rem',
+                border: '1.5px solid #e7e5e4',
+                background: '#fff',
+                fontSize: '0.875rem',
+                color: '#1c1917',
+                fontFamily: 'var(--font-geist-mono), monospace',
+                outline: 'none',
+                transition: 'border-color 0.15s',
+              }}
+              onFocus={(e) => (e.target.style.borderColor = '#a78bfa')}
+              onBlur={(e) => (e.target.style.borderColor = '#e7e5e4')}
+            />
+          </div>
+
+          {/* Error */}
+          {error && (
+            <div
+              style={{
+                padding: '0.75rem 1rem',
+                borderRadius: '0.5rem',
+                background: '#fff1f2',
+                border: '1.5px solid #fecdd3',
+                color: '#e11d48',
+                fontSize: '0.875rem',
+              }}
+            >
+              {error}
+            </div>
+          )}
+
+          {/* Submit */}
+          <button
+            type="submit"
+            disabled={loading}
+            style={{
+              width: '100%',
+              padding: '0.75rem 1.5rem',
+              borderRadius: '0.625rem',
+              border: 'none',
+              background: loading ? '#c4b5fd' : '#7c3aed',
+              color: '#fff',
+              fontSize: '1rem',
+              fontWeight: '600',
+              cursor: loading ? 'not-allowed' : 'pointer',
+              transition: 'background 0.15s',
+              letterSpacing: '-0.01em',
+            }}
+            onMouseEnter={(e) => {
+              if (!loading) (e.currentTarget.style.background = '#6d28d9')
+            }}
+            onMouseLeave={(e) => {
+              if (!loading) (e.currentTarget.style.background = '#7c3aed')
+            }}
+          >
+            {loading ? 'Creating board…' : 'Start Retro'}
+          </button>
+        </form>
+
+        {/* Footer note */}
+        <p style={{ textAlign: 'center', fontSize: '0.8125rem', color: '#a8a29e' }}>
+          Share the board URL with your team to collaborate in real time
+        </p>
+      </div>
+    </main>
+  )
 }
