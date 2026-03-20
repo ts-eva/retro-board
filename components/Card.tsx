@@ -1,8 +1,8 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { motion, useMotionValue, useTransform, animate } from 'framer-motion'
-import type { Card as CardType, ColumnType, Reaction } from '@/types'
+import { useState } from 'react'
+import { motion } from 'framer-motion'
+import type { Card as CardType, Reaction } from '@/types'
 
 const EMOJIS = ['👍', '❤️', '🔥', '💡'] as const
 
@@ -45,21 +45,20 @@ export default function Card({
   const [hovering, setHovering] = useState(false)
   const [savingReaction, setSavingReaction] = useState<string | null>(null)
   const [savingDiscussed, setSavingDiscussed] = useState(false)
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
 
-  // Swipe gesture
-  const dragX = useMotionValue(0)
-  const swipeHintOpacity = useTransform(dragX, [0, 40, 70], [0, 0.5, 1])
-  const SWIPE_THRESHOLD = 60
+  const isAuthor = card.author === author
+  const discussed = !!card.discussed
+  const discussedGreen = '#7FB5A0'
 
-  async function handleToggleDiscussed() {
+  async function handleToggleDiscussed(e: React.MouseEvent) {
+    e.stopPropagation()
     if (savingDiscussed) return
     setSavingDiscussed(true)
     try {
       const res = await fetch(`/api/cards/${card.id}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ discussed: !card.discussed }),
+        body: JSON.stringify({ discussed: !discussed }),
       })
       if (res.ok) {
         const updated = await res.json()
@@ -95,7 +94,8 @@ export default function Card({
     setEditing(false)
   }
 
-  async function handleDelete() {
+  async function handleDelete(e: React.MouseEvent) {
+    e.stopPropagation()
     try {
       await fetch(`/api/cards/${card.id}`, { method: 'DELETE' })
       onDelete(card.id)
@@ -117,9 +117,7 @@ export default function Card({
         const { action, reaction } = await res.json()
         const updatedReactions: Reaction[] =
           action === 'removed'
-            ? card.reactions.filter(
-                (r) => !(r.emoji === emoji && r.author === author)
-              )
+            ? card.reactions.filter((r) => !(r.emoji === emoji && r.author === author))
             : [...card.reactions, reaction]
         onUpdate({ ...card, reactions: updatedReactions })
       }
@@ -131,14 +129,13 @@ export default function Card({
   }
 
   function startEdit() {
-    if (linkMode) return
+    if (linkMode || !isAuthor) return
     setEditing(true)
     setEditContent(card.content)
-    setTimeout(() => textareaRef.current?.focus(), 0)
-  }
-
-  function handleCardClick() {
-    if (linkMode) onSelect()
+    setTimeout(() => {
+      const el = document.querySelector<HTMLTextAreaElement>(`[data-card-id="${card.id}"] textarea`)
+      el?.focus()
+    }, 0)
   }
 
   const reactionCounts: Record<string, number> = {}
@@ -148,249 +145,180 @@ export default function Card({
     if (r.author === author) myReactions.add(r.emoji)
   }
 
-  const discussedGreen = '#7FB5A0'
-
   return (
-    <div style={{ position: 'relative' }}>
-      {/* Swipe hint — revealed behind card */}
-      <motion.div
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.2 }}
+      data-card-id={card.id}
+      onMouseEnter={() => setHovering(true)}
+      onMouseLeave={() => setHovering(false)}
+      onClick={() => { if (linkMode) onSelect() }}
+      style={{
+        position: 'relative',
+        background: discussed ? '#f0faf6' : '#fff',
+        borderRadius: '0.875rem',
+        border: `1.5px solid ${
+          isSelected ? columnColor
+          : discussed ? `${discussedGreen}50`
+          : `${columnColor}30`
+        }`,
+        borderLeft: `4px solid ${discussed ? discussedGreen : columnColor}`,
+        boxShadow: hovering
+          ? '0 4px 16px rgba(0,0,0,0.07)'
+          : '0 1px 4px rgba(0,0,0,0.04)',
+        cursor: linkMode ? 'pointer' : 'default',
+        transition: 'box-shadow 0.15s, border-color 0.2s, background 0.2s',
+        overflow: 'hidden',
+      }}
+    >
+      {/* Delete — top right, author only */}
+      {hovering && !linkMode && !editing && isAuthor && (
+        <button
+          onClick={handleDelete}
+          style={{
+            position: 'absolute',
+            top: '0.375rem',
+            right: '0.375rem',
+            width: '1.5rem',
+            height: '1.5rem',
+            borderRadius: '50%',
+            border: 'none',
+            background: '#fee2e2',
+            color: '#dc2626',
+            fontSize: '0.75rem',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 10,
+          }}
+          onMouseEnter={(e) => (e.currentTarget.style.background = '#fca5a5')}
+          onMouseLeave={(e) => (e.currentTarget.style.background = '#fee2e2')}
+          title="Delete card"
+        >
+          ✕
+        </button>
+      )}
+
+      {/* Discussed — bottom right, always visible */}
+      <button
+        onClick={handleToggleDiscussed}
+        disabled={savingDiscussed}
         style={{
           position: 'absolute',
-          inset: 0,
-          borderRadius: '0.875rem',
-          background: `${discussedGreen}25`,
+          bottom: '0.375rem',
+          right: '0.375rem',
+          width: '1.5rem',
+          height: '1.5rem',
+          borderRadius: '50%',
+          border: 'none',
+          background: discussed
+            ? discussedGreen
+            : hovering
+            ? `${discussedGreen}35`
+            : 'transparent',
+          color: discussed ? '#fff' : discussedGreen,
+          fontSize: '0.8rem',
+          fontWeight: '700',
+          cursor: savingDiscussed ? 'not-allowed' : 'pointer',
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'flex-end',
-          paddingRight: '1rem',
-          opacity: swipeHintOpacity,
-          pointerEvents: 'none',
+          justifyContent: 'center',
+          transition: 'background 0.15s, color 0.15s',
+          zIndex: 10,
+          opacity: discussed || hovering ? 1 : 0,
         }}
+        title={discussed ? 'Mark as not discussed' : 'Mark as discussed'}
       >
-        <span style={{ fontSize: '1.25rem' }}>✓</span>
-      </motion.div>
+        ✓
+      </button>
 
-      <motion.div
-        drag={editing || linkMode ? false : 'x'}
-        dragConstraints={{ left: 0, right: 0 }}
-        dragElastic={{ left: 0, right: 0.35 }}
-        onDragEnd={(_, info) => {
-          if (info.offset.x > SWIPE_THRESHOLD) {
-            handleToggleDiscussed()
-          }
-          animate(dragX, 0, { type: 'spring', stiffness: 400, damping: 30 })
-        }}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.2 }}
-        data-card-id={card.id}
-        onMouseEnter={() => setHovering(true)}
-        onMouseLeave={() => setHovering(false)}
-        onClick={handleCardClick}
-        style={{
-          x: dragX,
-          position: 'relative',
-          background: card.discussed ? '#f2faf7' : '#fff',
-          borderRadius: '0.875rem',
-          border: `1.5px solid ${isSelected ? columnColor : hovering && linkMode ? `${columnColor}80` : card.discussed ? `${discussedGreen}60` : `${columnColor}30`}`,
-          borderLeft: `4px solid ${card.discussed ? discussedGreen : columnColor}`,
-          boxShadow: isSelected
-            ? `0 0 0 3px ${columnColor}25`
-            : hovering
-            ? '0 4px 16px rgba(0,0,0,0.07)'
-            : '0 1px 4px rgba(0,0,0,0.04)',
-          cursor: linkMode ? 'pointer' : editing ? 'default' : 'grab',
-          transition: 'box-shadow 0.15s, border-color 0.15s, background 0.2s',
-          overflow: 'hidden',
-          touchAction: 'pan-y',
-        }}
-      >
-        {/* Delete button — top right */}
-        {hovering && !linkMode && !editing && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              handleDelete()
+      {/* Content */}
+      <div style={{ padding: '0.75rem 2rem 0.5rem 0.875rem' }}>
+        {editing ? (
+          <textarea
+            value={editContent}
+            onChange={(e) => setEditContent(e.target.value)}
+            onBlur={saveEdit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); saveEdit() }
+              if (e.key === 'Escape') { setEditing(false); setEditContent(card.content) }
             }}
+            autoFocus
             style={{
-              position: 'absolute',
-              top: '0.375rem',
-              right: '0.375rem',
-              width: '1.5rem',
-              height: '1.5rem',
-              borderRadius: '50%',
-              border: 'none',
-              background: '#fee2e2',
-              color: '#dc2626',
-              fontSize: '0.75rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'background 0.15s',
-              zIndex: 10,
+              width: '100%',
+              minHeight: '4rem',
+              resize: 'vertical',
+              border: '1.5px solid #a78bfa',
+              borderRadius: '0.375rem',
+              padding: '0.375rem 0.5rem',
+              fontSize: '0.875rem',
+              lineHeight: '1.5',
+              color: '#1c1917',
+              outline: 'none',
+              fontFamily: 'inherit',
+              background: '#faf5ff',
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = '#fca5a5')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = '#fee2e2')}
-            title="Delete card"
+          />
+        ) : (
+          <p
+            onClick={startEdit}
+            style={{
+              fontSize: '0.875rem',
+              lineHeight: '1.5',
+              color: discussed ? '#6b7280' : '#1c1917',
+              margin: 0,
+              cursor: isAuthor && !linkMode ? 'text' : 'default',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word',
+              transition: 'color 0.2s',
+            }}
           >
-            ✕
-          </button>
+            {card.content}
+          </p>
         )}
+      </div>
 
-        {/* Discussed button — bottom right */}
-        {(hovering && !linkMode && !editing) || card.discussed ? (
-          <button
-            onClick={(e) => {
-              e.stopPropagation()
-              handleToggleDiscussed()
-            }}
-            disabled={savingDiscussed}
-            style={{
-              position: 'absolute',
-              bottom: '0.375rem',
-              right: '0.375rem',
-              width: '1.5rem',
-              height: '1.5rem',
-              borderRadius: '50%',
-              border: 'none',
-              background: card.discussed ? discussedGreen : `${discussedGreen}25`,
-              color: card.discussed ? '#fff' : discussedGreen,
-              fontSize: '0.75rem',
-              fontWeight: '700',
-              cursor: savingDiscussed ? 'not-allowed' : 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              transition: 'background 0.15s',
-              zIndex: 10,
-            }}
-            onMouseEnter={(e) => {
-              if (!card.discussed) e.currentTarget.style.background = `${discussedGreen}50`
-            }}
-            onMouseLeave={(e) => {
-              if (!card.discussed) e.currentTarget.style.background = `${discussedGreen}25`
-            }}
-            title={card.discussed ? 'Mark as not discussed' : 'Mark as discussed'}
-          >
-            ✓
-          </button>
-        ) : null}
-
-        {/* Content */}
-        <div style={{ padding: '0.75rem 0.875rem 0.5rem' }}>
-          {editing ? (
-            <textarea
-              ref={textareaRef}
-              value={editContent}
-              onChange={(e) => setEditContent(e.target.value)}
-              onBlur={saveEdit}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  saveEdit()
-                }
-                if (e.key === 'Escape') {
-                  setEditing(false)
-                  setEditContent(card.content)
-                }
-              }}
-              style={{
-                width: '100%',
-                minHeight: '4rem',
-                resize: 'vertical',
-                border: '1.5px solid #a78bfa',
-                borderRadius: '0.375rem',
-                padding: '0.375rem 0.5rem',
-                fontSize: '0.875rem',
-                lineHeight: '1.5',
-                color: '#1c1917',
-                outline: 'none',
-                fontFamily: 'inherit',
-                background: '#faf5ff',
-              }}
-            />
-          ) : (
-            <p
-              onClick={startEdit}
-              style={{
-                fontSize: '0.875rem',
-                lineHeight: '1.5',
-                color: '#1c1917',
-                margin: 0,
-                cursor: linkMode ? 'pointer' : 'text',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                paddingRight: hovering && !linkMode ? '1.75rem' : '0',
-                opacity: card.discussed ? 0.6 : 1,
-                transition: 'opacity 0.2s',
-              }}
-            >
-              {card.content}
-            </p>
-          )}
+      {/* Footer */}
+      <div style={{ padding: '0.375rem 2rem 0.625rem 0.875rem', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.75rem', color: '#a8a29e' }}>
+          <span>{card.author}</span>
+          <span>{formatRelativeTime(card.createdAt)}</span>
         </div>
 
-        {/* Footer */}
-        <div
-          style={{
-            padding: '0.375rem 0.875rem 0.625rem',
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '0.375rem',
-          }}
-        >
-          {/* Author + time */}
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              fontSize: '0.75rem',
-              color: '#a8a29e',
-            }}
-          >
-            <span>{card.author}</span>
-            <span>{formatRelativeTime(card.createdAt)}</span>
-          </div>
-
-          {/* Reactions */}
-          <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
-            {EMOJIS.map((emoji) => {
-              const count = reactionCounts[emoji] || 0
-              const mine = myReactions.has(emoji)
-              return (
-                <button
-                  key={emoji}
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    toggleReaction(emoji)
-                  }}
-                  disabled={!!savingReaction}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '0.25rem',
-                    padding: '0.1875rem 0.5rem',
-                    borderRadius: '9999px',
-                    border: `1.5px solid ${mine ? columnColor : `${columnColor}30`}`,
-                    background: mine ? `${columnColor}20` : '#f9f9f8',
-                    fontSize: '0.75rem',
-                    cursor: savingReaction ? 'not-allowed' : 'pointer',
-                    color: mine ? columnColor : '#78716c',
-                    fontWeight: mine ? '600' : '400',
-                    transition: 'all 0.15s',
-                    opacity: savingReaction && savingReaction !== emoji ? 0.6 : 1,
-                  }}
-                >
-                  <span>{emoji}</span>
-                  {count > 0 && <span>{count}</span>}
-                </button>
-              )
-            })}
-          </div>
+        <div style={{ display: 'flex', gap: '0.375rem', flexWrap: 'wrap' }}>
+          {EMOJIS.map((emoji) => {
+            const count = reactionCounts[emoji] || 0
+            const mine = myReactions.has(emoji)
+            return (
+              <button
+                key={emoji}
+                onClick={(e) => { e.stopPropagation(); toggleReaction(emoji) }}
+                disabled={!!savingReaction}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.25rem',
+                  padding: '0.1875rem 0.5rem',
+                  borderRadius: '9999px',
+                  border: `1.5px solid ${mine ? columnColor : `${columnColor}30`}`,
+                  background: mine ? `${columnColor}20` : '#f9f9f8',
+                  fontSize: '0.75rem',
+                  cursor: savingReaction ? 'not-allowed' : 'pointer',
+                  color: mine ? columnColor : '#78716c',
+                  fontWeight: mine ? '600' : '400',
+                  transition: 'all 0.15s',
+                  opacity: savingReaction && savingReaction !== emoji ? 0.6 : 1,
+                }}
+              >
+                <span>{emoji}</span>
+                {count > 0 && <span>{count}</span>}
+              </button>
+            )
+          })}
         </div>
-      </motion.div>
-    </div>
+      </div>
+    </motion.div>
   )
 }
