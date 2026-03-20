@@ -246,11 +246,8 @@ export default function Board({ initialData }: BoardProps) {
       {!nameConfirmed && <NameModal onConfirm={handleNameConfirm} />}
       {/* Toolbar */}
       <header
+        className="board-header"
         style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '0.75rem 1.5rem',
           borderBottom: '1.5px solid #E8ECF2',
           background: '#fff',
           position: 'sticky',
@@ -258,19 +255,12 @@ export default function Board({ initialData }: BoardProps) {
           zIndex: 20,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <h1
-            style={{
-              fontSize: '1.125rem',
-              fontWeight: '700',
-              color: '#1c1917',
-              letterSpacing: '-0.02em',
-              margin: 0,
-            }}
-          >
+        <div className="board-header-left">
+          <h1 className="board-header-title" title={board.title}>
             {board.title}
           </h1>
           <span
+            className="board-header-id"
             style={{
               fontSize: '0.75rem',
               color: '#a8a29e',
@@ -280,6 +270,7 @@ export default function Board({ initialData }: BoardProps) {
               borderRadius: '0.375rem',
               userSelect: 'all',
               cursor: 'text',
+              flexShrink: 0,
             }}
             title={`Board ID: ${board.id}`}
           >
@@ -287,7 +278,7 @@ export default function Board({ initialData }: BoardProps) {
           </span>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
           {/* Copy board ID button */}
           <button
             onClick={() => {
@@ -364,7 +355,7 @@ export default function Board({ initialData }: BoardProps) {
       )}
 
       {/* Main content */}
-      <main style={{ flex: 1, padding: '1.5rem', overflow: 'auto' }}>
+      <main className="board-main">
         {/* Previous action items */}
         {previousCards.length > 0 && (
           <PreviousActionItems
@@ -374,17 +365,7 @@ export default function Board({ initialData }: BoardProps) {
         )}
 
         {/* Board columns */}
-        <div
-          ref={boardRef}
-          style={{
-            position: 'relative',
-            display: 'flex',
-            gap: '1rem',
-            alignItems: 'flex-start',
-            minHeight: '60vh',
-            width: '100%',
-          }}
-        >
+        <div ref={boardRef} className="board-columns">
           {COLUMNS.map((col) => (
             <Column
               key={col}
