@@ -36,7 +36,7 @@ async function getBoardData(id: string): Promise<BoardPageData | null> {
     if (prevBoard) previousCards = prevBoard.cards
   }
 
-  return { board, previousCards } as BoardPageData
+  return { board, previousCards } as unknown as BoardPageData
 }
 
 export default async function BoardPage({ params }: BoardPageProps) {
