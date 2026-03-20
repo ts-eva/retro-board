@@ -1,5 +1,6 @@
 import { notFound } from 'next/navigation'
 import Board from '@/components/Board'
+import { prisma } from '@/lib/prisma'
 import type { BoardPageData } from '@/types'
 
 interface BoardPageProps {
@@ -7,32 +8,42 @@ interface BoardPageProps {
 }
 
 async function getBoardData(id: string): Promise<BoardPageData | null> {
-  try {
-    // Use absolute URL for server-side fetch
-    const baseUrl =
-      process.env.NEXT_PUBLIC_BASE_URL ||
-      (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000')
+  const board = await prisma.board.findUnique({
+    where: { id },
+    include: {
+      cards: {
+        include: { reactions: true, linksFrom: true, linksTo: true },
+        orderBy: { createdAt: 'asc' },
+      },
+    },
+  })
 
-    const res = await fetch(`${baseUrl}/api/boards/${id}`, {
-      cache: 'no-store',
+  if (!board) return null
+
+  let previousCards: typeof board.cards = []
+
+  if (board.previousBoard) {
+    const prevBoard = await prisma.board.findUnique({
+      where: { id: board.previousBoard },
+      include: {
+        cards: {
+          where: { column: 'ACTION_ITEMS' },
+          include: { reactions: true, linksFrom: true, linksTo: true },
+          orderBy: { createdAt: 'asc' },
+        },
+      },
     })
-
-    if (res.status === 404) return null
-    if (!res.ok) return null
-
-    return res.json()
-  } catch {
-    return null
+    if (prevBoard) previousCards = prevBoard.cards
   }
+
+  return { board, previousCards } as BoardPageData
 }
 
 export default async function BoardPage({ params }: BoardPageProps) {
   const { id } = await params
   const data = await getBoardData(id)
 
-  if (!data) {
-    notFound()
-  }
+  if (!data) notFound()
 
   return <Board initialData={data} />
 }
