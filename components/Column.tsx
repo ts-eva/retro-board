@@ -135,7 +135,6 @@ export default function Column({
         flexDirection: 'column',
         flex: '1 1 0',
         minWidth: '220px',
-        maxWidth: '320px',
         background: meta.tint,
         borderRadius: '1.25rem',
         border: `1.5px solid ${meta.color}30`,

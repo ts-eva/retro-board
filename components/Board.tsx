@@ -382,6 +382,7 @@ export default function Board({ initialData }: BoardProps) {
             gap: '1rem',
             alignItems: 'flex-start',
             minHeight: '60vh',
+            width: '100%',
           }}
         >
           {COLUMNS.map((col) => (
