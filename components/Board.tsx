@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState, useRef, useCallback } from 'react'
+import { useRouter } from 'next/navigation'
 import { getPusherClient, setPusherUserName } from '@/lib/pusher-client'
 import { motion, AnimatePresence } from 'framer-motion'
 import type { PresenceChannel } from 'pusher-js'
@@ -46,6 +47,7 @@ export default function Board({ initialData }: BoardProps) {
   const [showCalm, setShowCalm] = useState(false)
   const prevTimerEnd = useRef<number | null>(null)
 
+  const router = useRouter()
   const boardRef = useRef<HTMLDivElement>(null)
   const boardId = board.id
 
@@ -362,6 +364,24 @@ export default function Board({ initialData }: BoardProps) {
               )}
             </div>
           )}
+
+          {/* New Retro */}
+          <button
+            onClick={() => router.push(`/?from=${boardId}`)}
+            title="Start a new retro continuing from this one"
+            style={{
+              padding: '0.375rem 0.75rem',
+              borderRadius: '0.5rem',
+              border: '1.5px solid #e7e5e4',
+              background: '#fff',
+              fontSize: '0.8125rem',
+              color: '#44403c',
+              cursor: 'pointer',
+              fontWeight: '500',
+            }}
+          >
+            New Retro
+          </button>
 
           {/* Timer */}
           <TimerWidget

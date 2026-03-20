@@ -1,12 +1,18 @@
 'use client'
 
-import { useState } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 
 export default function HomePage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [team, setTeam] = useState('')
   const [previousBoard, setPreviousBoard] = useState('')
+
+  useEffect(() => {
+    const from = searchParams.get('from')
+    if (from) setPreviousBoard(from)
+  }, [searchParams])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
