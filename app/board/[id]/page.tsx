@@ -13,7 +13,8 @@ interface BoardPageProps {
 // Cap at 20 hops to be safe.
 async function collectPreviousActionItems(startId: string) {
   const seen = new Set<string>()
-  const items: object[] = []
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const items: any[] = []
   let currentId: string | null = startId
   let isFirst = true
   let hops = 0
