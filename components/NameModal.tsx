@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { getRandomName } from '@/lib/names'
 
@@ -12,10 +12,12 @@ interface NameModalProps {
 }
 
 export default function NameModal({ onConfirm }: NameModalProps) {
-  const [name, setName] = useState(() => {
-    if (typeof window === 'undefined') return getRandomName()
-    return localStorage.getItem(STORAGE_KEY) || getRandomName()
-  })
+  const [name, setName] = useState('')
+
+  useEffect(() => {
+    const stored = localStorage.getItem(STORAGE_KEY)
+    setName(stored || getRandomName())
+  }, [])
 
   function reroll() {
     const next = getRandomName()
@@ -27,6 +29,8 @@ export default function NameModal({ onConfirm }: NameModalProps) {
     localStorage.setItem(CONFIRMED_KEY, 'true')
     onConfirm(name)
   }
+
+  if (!name) return null
 
   return (
     <AnimatePresence>
