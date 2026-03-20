@@ -20,29 +20,32 @@ async function collectPreviousActionItems(startId: string) {
   let hops = 0
 
   while (currentId && hops < 20) {
-    const board = await prisma.board.findUnique({
+    const cardWhere = isFirst
+      ? { column: 'ACTION_ITEMS' as const }
+      : { column: 'ACTION_ITEMS' as const, resolved: false }
+
+    const result = await prisma.board.findUnique({
       where: { id: currentId },
-      include: {
+      select: {
+        previousBoard: true,
         cards: {
-          where: isFirst
-            ? { column: 'ACTION_ITEMS' }
-            : { column: 'ACTION_ITEMS', resolved: false },
+          where: cardWhere,
           include: { reactions: true, linksFrom: true, linksTo: true },
           orderBy: { createdAt: 'asc' },
         },
       },
     })
 
-    if (!board) break
+    if (!result) break
 
-    for (const card of board.cards) {
+    for (const card of result.cards) {
       if (!seen.has(card.id)) {
         seen.add(card.id)
         items.push(card)
       }
     }
 
-    currentId = board.previousBoard
+    currentId = result.previousBoard
     isFirst = false
     hops++
   }
