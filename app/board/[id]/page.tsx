@@ -13,10 +13,11 @@ async function getChain(startId: string): Promise<string[]> {
   let currentId: string | null = startId
   while (currentId && chain.length < 20) {
     chain.push(currentId)
-    const row = await prisma.board.findUnique({
-      where: { id: currentId },
-      select: { previousBoard: true },
-    })
+    const row: { previousBoard: string | null } | null =
+      await prisma.board.findUnique({
+        where: { id: currentId },
+        select: { previousBoard: true },
+      })
     currentId = row?.previousBoard ?? null
   }
   return chain
