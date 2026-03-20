@@ -45,7 +45,8 @@ export default function Board({ initialData }: BoardProps) {
   const [members, setMembers] = useState<string[]>([])
   const [timerEnd, setTimerEnd] = useState<number | null>(null)
   const [showCalm, setShowCalm] = useState(false)
-  const prevTimerEnd = useRef<number | null>(null)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef<HTMLDivElement>(null)
 
   const router = useRouter()
   const boardRef = useRef<HTMLDivElement>(null)
@@ -206,6 +207,18 @@ export default function Board({ initialData }: BoardProps) {
     }
   }, [author, boardId])
 
+  // Close menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return
+    function handleClick(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [menuOpen])
+
   const handleSelectCard = useCallback(
     async (cardId: string) => {
       // Link mode removed — no-op
@@ -365,24 +378,6 @@ export default function Board({ initialData }: BoardProps) {
             </div>
           )}
 
-          {/* New Retro */}
-          <button
-            onClick={() => router.push(`/?from=${boardId}`)}
-            title="Start a new retro continuing from this one"
-            style={{
-              padding: '0.375rem 0.75rem',
-              borderRadius: '0.5rem',
-              border: '1.5px solid #e7e5e4',
-              background: '#fff',
-              fontSize: '0.8125rem',
-              color: '#44403c',
-              cursor: 'pointer',
-              fontWeight: '500',
-            }}
-          >
-            New Retro
-          </button>
-
           {/* Timer */}
           <TimerWidget
             boardId={boardId}
@@ -391,55 +386,142 @@ export default function Board({ initialData }: BoardProps) {
             onStop={() => setTimerEnd(null)}
           />
 
-          {/* Copy ID */}
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(board.id).then(() => {
-                showToast('Board ID copied!')
-              })
-            }}
-            style={{
-              padding: '0.375rem 0.75rem',
-              borderRadius: '0.5rem',
-              border: '1.5px solid #e7e5e4',
-              background: '#fff',
-              fontSize: '0.8125rem',
-              color: '#44403c',
-              cursor: 'pointer',
-              fontWeight: '500',
-            }}
-            title="Copy board ID (for linking to next session)"
-          >
-            Copy ID
-          </button>
-
-          {/* Copy URL */}
-          <button
-            onClick={() => {
-              navigator.clipboard.writeText(window.location.href).then(() => {
-                showToast('Board link copied!')
-              })
-            }}
-            style={{
-              padding: '0.375rem 0.75rem',
-              borderRadius: '0.5rem',
-              border: '1.5px solid #e7e5e4',
-              background: '#fff',
-              fontSize: '0.8125rem',
-              color: '#44403c',
-              cursor: 'pointer',
-              fontWeight: '500',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.375rem',
-            }}
-            title="Copy shareable link"
-          >
-            <span>🔗</span>
-            <span>Share</span>
-          </button>
-
           {author && <UserBadge name={author} />}
+
+          {/* Hamburger menu */}
+          <div ref={menuRef} style={{ position: 'relative' }}>
+            <button
+              onClick={() => setMenuOpen((o) => !o)}
+              title="Menu"
+              style={{
+                width: '2rem',
+                height: '2rem',
+                borderRadius: '0.5rem',
+                border: '1.5px solid #e7e5e4',
+                background: menuOpen ? '#f5f5f4' : '#fff',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '0.2rem',
+                flexShrink: 0,
+              }}
+            >
+              {[0, 1, 2].map((i) => (
+                <span
+                  key={i}
+                  style={{
+                    display: 'block',
+                    width: '0.875rem',
+                    height: '1.5px',
+                    background: '#44403c',
+                    borderRadius: '1px',
+                  }}
+                />
+              ))}
+            </button>
+
+            {menuOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 0.5rem)',
+                  right: 0,
+                  background: '#fff',
+                  border: '1.5px solid #e7e5e4',
+                  borderRadius: '0.75rem',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+                  minWidth: '11rem',
+                  zIndex: 30,
+                  overflow: 'hidden',
+                }}
+              >
+                {[
+                  {
+                    label: 'Copy ID',
+                    icon: '🔑',
+                    description: 'For next session',
+                    onClick: () => {
+                      navigator.clipboard.writeText(board.id).then(() => showToast('Board ID copied!'))
+                      setMenuOpen(false)
+                    },
+                  },
+                  {
+                    label: 'Share link',
+                    icon: '🔗',
+                    description: 'Copy board URL',
+                    onClick: () => {
+                      navigator.clipboard.writeText(window.location.href).then(() => showToast('Board link copied!'))
+                      setMenuOpen(false)
+                    },
+                  },
+                ].map((item) => (
+                  <button
+                    key={item.label}
+                    onClick={item.onClick}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.625rem',
+                      padding: '0.625rem 0.875rem',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      transition: 'background 0.1s',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = '#faf9f8')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                  >
+                    <span style={{ fontSize: '1rem' }}>{item.icon}</span>
+                    <div>
+                      <div style={{ fontSize: '0.875rem', fontWeight: '500', color: '#1c1917' }}>
+                        {item.label}
+                      </div>
+                      <div style={{ fontSize: '0.75rem', color: '#a8a29e' }}>
+                        {item.description}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+
+                <div style={{ height: '1px', background: '#f5f5f4', margin: '0.25rem 0' }} />
+
+                <button
+                  onClick={() => {
+                    router.push(`/?from=${boardId}`)
+                    setMenuOpen(false)
+                  }}
+                  style={{
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.625rem',
+                    padding: '0.625rem 0.875rem',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textAlign: 'left',
+                    transition: 'background 0.1s',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = '#faf9f8')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+                >
+                  <span style={{ fontSize: '1rem' }}>✨</span>
+                  <div>
+                    <div style={{ fontSize: '0.875rem', fontWeight: '500', color: '#1c1917' }}>
+                      New Retro
+                    </div>
+                    <div style={{ fontSize: '0.75rem', color: '#a8a29e' }}>
+                      Continue from this session
+                    </div>
+                  </div>
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       </header>
 
