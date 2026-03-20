@@ -15,7 +15,7 @@ export default function NameModal({ onConfirm }: NameModalProps) {
   const [name, setName] = useState('')
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY)
+    const stored = sessionStorage.getItem(STORAGE_KEY)
     setName(stored || getRandomName())
   }, [])
 
@@ -25,8 +25,8 @@ export default function NameModal({ onConfirm }: NameModalProps) {
   }
 
   function confirm() {
-    localStorage.setItem(STORAGE_KEY, name)
-    localStorage.setItem(CONFIRMED_KEY, 'true')
+    sessionStorage.setItem(STORAGE_KEY, name)
+    sessionStorage.setItem(CONFIRMED_KEY, 'true')
     onConfirm(name)
   }
 

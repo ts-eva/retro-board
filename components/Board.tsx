@@ -47,8 +47,8 @@ export default function Board({ initialData }: BoardProps) {
   // Check localStorage on mount — if already confirmed, skip modal
   useEffect(() => {
     if (typeof window === 'undefined') return
-    const confirmed = localStorage.getItem('retro-name-confirmed') === 'true'
-    const stored = localStorage.getItem('retro-user-name')
+    const confirmed = sessionStorage.getItem('retro-name-confirmed') === 'true'
+    const stored = sessionStorage.getItem('retro-user-name')
     if (confirmed && stored) {
       setAuthor(stored)
       setNameConfirmed(true)
