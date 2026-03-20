@@ -128,11 +128,6 @@ export default function Column({
     }
   }
 
-  function usePrompt(prompt: string) {
-    setNewContent(prompt)
-    textareaRef.current?.focus()
-  }
-
   return (
     <div
       style={{
@@ -188,45 +183,28 @@ export default function Column({
         </span>
       </div>
 
-      {/* Prompt chips */}
+      {/* Prompts */}
       <div
         style={{
-          padding: '0 0.75rem 0.625rem',
+          padding: '0 1rem 0.875rem',
           display: 'flex',
-          flexWrap: 'wrap',
-          gap: '0.375rem',
+          flexDirection: 'column',
+          gap: '0.2rem',
         }}
       >
         {meta.prompts.map((prompt) => (
-          <button
+          <p
             key={prompt}
-            onClick={() => !linkMode && usePrompt(prompt)}
-            disabled={linkMode}
             style={{
-              fontSize: '0.6875rem',
-              padding: '0.25rem 0.625rem',
-              borderRadius: '9999px',
-              border: `1px solid ${meta.color}60`,
-              background: `${meta.color}15`,
+              margin: 0,
+              fontSize: '0.75rem',
               color: meta.textColor,
-              cursor: linkMode ? 'default' : 'pointer',
-              opacity: linkMode ? 0.5 : 1,
-              transition: 'background 0.15s, border-color 0.15s',
-              lineHeight: 1.4,
-            }}
-            onMouseEnter={(e) => {
-              if (!linkMode) {
-                e.currentTarget.style.background = `${meta.color}30`
-                e.currentTarget.style.borderColor = meta.color
-              }
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = `${meta.color}15`
-              e.currentTarget.style.borderColor = `${meta.color}60`
+              opacity: 0.55,
+              lineHeight: 1.5,
             }}
           >
             {prompt}
-          </button>
+          </p>
         ))}
       </div>
 
