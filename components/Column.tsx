@@ -199,7 +199,8 @@ export default function Column({
               margin: 0,
               fontSize: '0.75rem',
               color: meta.textColor,
-              opacity: 0.55,
+              opacity: 0.75,
+              fontWeight: '500',
               lineHeight: 1.5,
             }}
           >
@@ -287,7 +288,7 @@ export default function Column({
               : meta.color,
             color: !newContent.trim() || submitting || linkMode
               ? `${meta.color}90`
-              : '#fff',
+              : '#1a202c',
             fontSize: '0.875rem',
             cursor: !newContent.trim() || submitting || linkMode
               ? 'not-allowed'
