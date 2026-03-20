@@ -24,6 +24,7 @@ model Card {
   content   String
   author    String
   resolved  Boolean    @default(false)
+  discussed Boolean    @default(false)
   createdAt DateTime   @default(now())
   reactions Reaction[]
   linksFrom CardLink[] @relation("LinkFrom")

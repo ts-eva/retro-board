@@ -20,6 +20,7 @@ export interface Card {
   content: string
   author: string
   resolved: boolean
+  discussed: boolean
   createdAt: string
   reactions: Reaction[]
   linksFrom: CardLink[]

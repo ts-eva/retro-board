@@ -9,9 +9,10 @@ export async function PATCH(
   try {
     const { id } = await params
     const body = await request.json()
-    const { content, resolved } = body as {
+    const { content, resolved, discussed } = body as {
       content?: string
       resolved?: boolean
+      discussed?: boolean
     }
 
     const existing = await prisma.card.findUnique({ where: { id } })
@@ -24,6 +25,7 @@ export async function PATCH(
       data: {
         ...(content !== undefined ? { content: content.trim() } : {}),
         ...(resolved !== undefined ? { resolved } : {}),
+        ...(discussed !== undefined ? { discussed } : {}),
       },
       include: {
         reactions: true,
