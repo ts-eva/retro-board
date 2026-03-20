@@ -1,7 +1,8 @@
 'use client'
 
 import { useEffect, useState, useRef, useCallback } from 'react'
-import { getPusherClient } from '@/lib/pusher-client'
+import { getPusherClient, setPusherUserName } from '@/lib/pusher-client'
+import type { PresenceChannel } from 'pusher-js'
 import Column from './Column'
 import LinkOverlay from './LinkOverlay'
 import PreviousActionItems from './PreviousActionItems'
@@ -21,29 +22,24 @@ interface BoardProps {
 }
 
 export default function Board({ initialData }: BoardProps) {
-  const { board: initialBoard, previousCards: initialPreviousCards } = initialData
+  const { board: initialBoard, previousCards: initialPreviousCards, previousSessions: initialSessions } = initialData
 
   const [board] = useState<BoardType>(initialBoard)
   const [cards, setCards] = useState<Card[]>(initialBoard.cards)
   const [links, setLinks] = useState<CardLink[]>(() => {
-    // Collect all unique links from cards
     const linkMap = new Map<string, CardLink>()
     for (const card of initialBoard.cards) {
-      for (const link of card.linksFrom) {
-        linkMap.set(link.id, link)
-      }
-      for (const link of card.linksTo) {
-        linkMap.set(link.id, link)
-      }
+      for (const link of card.linksFrom) linkMap.set(link.id, link)
+      for (const link of card.linksTo) linkMap.set(link.id, link)
     }
     return Array.from(linkMap.values())
   })
   const [previousCards, setPreviousCards] = useState<Card[]>(initialPreviousCards)
-  const [linkMode, setLinkMode] = useState(false)
-  const [selectedCard, setSelectedCard] = useState<string | null>(null)
+  const [previousSessions, setPreviousSessions] = useState(initialSessions)
   const [toasts, setToasts] = useState<Toast[]>([])
   const [author, setAuthor] = useState<string>('')
   const [nameConfirmed, setNameConfirmed] = useState(false)
+  const [members, setMembers] = useState<string[]>([])
 
   const boardRef = useRef<HTMLDivElement>(null)
   const boardId = board.id
@@ -72,7 +68,7 @@ export default function Board({ initialData }: BoardProps) {
     }, 3500)
   }
 
-  // Pusher subscriptions
+  // Card/link events — subscribe immediately
   useEffect(() => {
     const pusher = getPusherClient()
     const channel = pusher.subscribe(`board-${boardId}`)
@@ -85,21 +81,20 @@ export default function Board({ initialData }: BoardProps) {
     })
 
     channel.bind('card-updated', (data: { card: Card }) => {
-      setCards((prev) =>
-        prev.map((c) => (c.id === data.card.id ? data.card : c))
-      )
-      // Also update previousCards if applicable
-      setPreviousCards((prev) =>
-        prev.map((c) => (c.id === data.card.id ? data.card : c))
+      setCards((prev) => prev.map((c) => (c.id === data.card.id ? data.card : c)))
+      setPreviousCards((prev) => prev.map((c) => (c.id === data.card.id ? data.card : c)))
+      setPreviousSessions((prev) =>
+        prev.map((s) => ({
+          ...s,
+          cards: s.cards.map((c) => (c.id === data.card.id ? data.card : c)),
+        }))
       )
     })
 
     channel.bind('card-deleted', (data: { cardId: string }) => {
       setCards((prev) => prev.filter((c) => c.id !== data.cardId))
       setLinks((prev) =>
-        prev.filter(
-          (l) => l.fromId !== data.cardId && l.toId !== data.cardId
-        )
+        prev.filter((l) => l.fromId !== data.cardId && l.toId !== data.cardId)
       )
     })
 
@@ -121,9 +116,12 @@ export default function Board({ initialData }: BoardProps) {
                     (r) => !(r.emoji === data.emoji && r.author === data.author)
                   )
                 : data.reaction
-                ? [...c.reactions.filter(
-                    (r) => !(r.emoji === data.emoji && r.author === data.author)
-                  ), data.reaction]
+                ? [
+                    ...c.reactions.filter(
+                      (r) => !(r.emoji === data.emoji && r.author === data.author)
+                    ),
+                    data.reaction,
+                  ]
                 : c.reactions
             return { ...c, reactions }
           })
@@ -142,54 +140,50 @@ export default function Board({ initialData }: BoardProps) {
       setLinks((prev) => prev.filter((l) => l.id !== data.linkId))
     })
 
-    channel.bind('user-joined', (data: { name: string }) => {
-      showToast(`${data.name} joined the board`)
-    })
-
     return () => {
       channel.unbind_all()
       pusher.unsubscribe(`board-${boardId}`)
     }
   }, [boardId])
 
+  // Presence channel — subscribe after name is confirmed
+  useEffect(() => {
+    if (!author) return
+
+    setPusherUserName(author)
+    const pusher = getPusherClient()
+    const presence = pusher.subscribe(`presence-board-${boardId}`) as PresenceChannel
+
+    presence.bind('pusher:subscription_succeeded', (data: { members: Record<string, { name: string }> }) => {
+      const names = Object.values(data.members).map((m) => m.name)
+      setMembers(names)
+    })
+
+    presence.bind('pusher:member_added', (member: { info: { name: string } }) => {
+      setMembers((prev) => [...prev, member.info.name])
+      showToast(`${member.info.name} joined`)
+    })
+
+    presence.bind('pusher:member_removed', (member: { info: { name: string } }) => {
+      setMembers((prev) => {
+        const idx = prev.indexOf(member.info.name)
+        if (idx === -1) return prev
+        return [...prev.slice(0, idx), ...prev.slice(idx + 1)]
+      })
+    })
+
+    return () => {
+      presence.unbind_all()
+      pusher.unsubscribe(`presence-board-${boardId}`)
+    }
+  }, [author, boardId])
+
   const handleSelectCard = useCallback(
     async (cardId: string) => {
-      if (!linkMode) return
-
-      if (!selectedCard) {
-        setSelectedCard(cardId)
-        return
-      }
-
-      if (selectedCard === cardId) {
-        setSelectedCard(null)
-        return
-      }
-
-      // Create link
-      const fromId = selectedCard
-      const toId = cardId
-      setSelectedCard(null)
-      setLinkMode(false)
-
-      try {
-        const res = await fetch('/api/links', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fromId, toId }),
-        })
-        if (res.ok) {
-          const link = await res.json()
-          setLinks((prev) => {
-            if (prev.find((l) => l.id === link.id)) return prev
-            return [...prev, link]
-          })
-        }
-      } catch {
-        // ignore
-      }
+      // Link mode removed — no-op
+      void cardId
     },
-    [linkMode, selectedCard]
+    []
   )
 
   async function handleDeleteLink(linkId: string) {
@@ -207,8 +201,12 @@ export default function Board({ initialData }: BoardProps) {
 
   function handleCardUpdate(updated: Card) {
     setCards((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
-    setPreviousCards((prev) =>
-      prev.map((c) => (c.id === updated.id ? updated : c))
+    setPreviousCards((prev) => prev.map((c) => (c.id === updated.id ? updated : c)))
+    setPreviousSessions((prev) =>
+      prev.map((s) => ({
+        ...s,
+        cards: s.cards.map((c) => (c.id === updated.id ? updated : c)),
+      }))
     )
   }
 
@@ -226,13 +224,15 @@ export default function Board({ initialData }: BoardProps) {
     })
   }
 
-  // Build column → color map for link overlay
   const cardColumnMap: Record<string, ColumnType> = {}
   for (const card of cards) {
     cardColumnMap[card.id] = card.column
   }
 
   const boardIdLabel = board.id.slice(0, 8) + '…'
+
+  // Members excluding current user
+  const otherMembers = members.filter((n) => n !== author)
 
   return (
     <div
@@ -244,6 +244,7 @@ export default function Board({ initialData }: BoardProps) {
       }}
     >
       {!nameConfirmed && <NameModal onConfirm={handleNameConfirm} />}
+
       {/* Toolbar */}
       <header
         className="board-header"
@@ -300,11 +301,47 @@ export default function Board({ initialData }: BoardProps) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
-          {/* Copy board ID button */}
+          {/* Presence: other members */}
+          {otherMembers.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+              {otherMembers.slice(0, 5).map((name) => (
+                <div
+                  key={name}
+                  title={name}
+                  style={{
+                    width: '1.75rem',
+                    height: '1.75rem',
+                    borderRadius: '9999px',
+                    background: nameToColor(name),
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: '0.625rem',
+                    fontWeight: '700',
+                    color: '#fff',
+                    letterSpacing: '-0.02em',
+                    border: '2px solid #fff',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.15)',
+                    flexShrink: 0,
+                    cursor: 'default',
+                  }}
+                >
+                  {initials(name)}
+                </div>
+              ))}
+              {otherMembers.length > 5 && (
+                <span style={{ fontSize: '0.75rem', color: '#a8a29e' }}>
+                  +{otherMembers.length - 5}
+                </span>
+              )}
+            </div>
+          )}
+
+          {/* Copy ID */}
           <button
             onClick={() => {
               navigator.clipboard.writeText(board.id).then(() => {
-                showToast('Board ID copied to clipboard!')
+                showToast('Board ID copied!')
               })
             }}
             style={{
@@ -317,70 +354,47 @@ export default function Board({ initialData }: BoardProps) {
               cursor: 'pointer',
               fontWeight: '500',
             }}
-            title="Copy board ID"
+            title="Copy board ID (for linking to next session)"
           >
             Copy ID
           </button>
 
-          {/* Link mode toggle */}
+          {/* Copy URL */}
           <button
             onClick={() => {
-              setLinkMode((m) => !m)
-              setSelectedCard(null)
+              navigator.clipboard.writeText(window.location.href).then(() => {
+                showToast('Board link copied!')
+              })
             }}
             style={{
               padding: '0.375rem 0.75rem',
               borderRadius: '0.5rem',
-              border: `1.5px solid ${linkMode ? '#8A9CC7' : '#E8ECF2'}`,
-              background: linkMode ? '#EEF1F9' : '#fff',
+              border: '1.5px solid #e7e5e4',
+              background: '#fff',
               fontSize: '0.8125rem',
-              color: linkMode ? '#384E82' : '#44403c',
+              color: '#44403c',
               cursor: 'pointer',
               fontWeight: '500',
               display: 'flex',
               alignItems: 'center',
               gap: '0.375rem',
-              transition: 'all 0.15s',
             }}
-            title={linkMode ? 'Exit link mode' : 'Enter link mode'}
+            title="Copy shareable link"
           >
             <span>🔗</span>
-            <span>{linkMode ? 'Linking…' : 'Link'}</span>
+            <span>Share</span>
           </button>
 
           {author && <UserBadge name={author} />}
         </div>
       </header>
 
-      {/* Link mode banner */}
-      {linkMode && (
-        <div
-          style={{
-            background: '#EEF1F9',
-            borderBottom: '1.5px solid #8A9CC7',
-            padding: '0.5rem 1.5rem',
-            fontSize: '0.8125rem',
-            color: '#384E82',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.5rem',
-          }}
-        >
-          <span>🔗</span>
-          <span>
-            {selectedCard
-              ? 'Now click a second card to create the link. Click the same card to cancel.'
-              : 'Click a card to start a link, then click another card to connect them.'}
-          </span>
-        </div>
-      )}
-
       {/* Main content */}
       <main className="board-main" style={{ flex: 1, padding: '1.5rem', overflow: 'auto' }}>
         {/* Previous action items */}
-        {previousCards.length > 0 && (
+        {previousSessions.length > 0 && (
           <PreviousActionItems
-            cards={previousCards}
+            sessions={previousSessions}
             onCardUpdate={handleCardUpdate}
           />
         )}
@@ -406,8 +420,8 @@ export default function Board({ initialData }: BoardProps) {
               links={links}
               boardId={boardId}
               author={author}
-              linkMode={linkMode}
-              selectedCard={selectedCard}
+              linkMode={false}
+              selectedCard={null}
               onSelectCard={handleSelectCard}
               onCardUpdate={handleCardUpdate}
               onCardDelete={handleCardDelete}
@@ -415,7 +429,7 @@ export default function Board({ initialData }: BoardProps) {
             />
           ))}
 
-          {/* Link overlay */}
+          {/* Link overlay (shows existing links) */}
           <LinkOverlay
             links={links}
             cardColumnMap={cardColumnMap}
@@ -465,4 +479,24 @@ export default function Board({ initialData }: BoardProps) {
       `}</style>
     </div>
   )
+}
+
+// Deterministic color from a name string
+function nameToColor(name: string): string {
+  const colors = [
+    '#7FB5A0', '#C4908A', '#C4A96B', '#8A9CC7',
+    '#9B8EC4', '#C49B8A', '#8AB5C4', '#A0C48A',
+  ]
+  let hash = 0
+  for (let i = 0; i < name.length; i++) hash = name.charCodeAt(i) + ((hash << 5) - hash)
+  return colors[Math.abs(hash) % colors.length]
+}
+
+function initials(name: string): string {
+  return name
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
 }

@@ -34,7 +34,14 @@ export interface Board {
   cards: Card[]
 }
 
+export interface PreviousSession {
+  boardId: string
+  boardTitle: string
+  cards: Card[]
+}
+
 export interface BoardPageData {
   board: Board
   previousCards: Card[]
+  previousSessions: PreviousSession[]
 }

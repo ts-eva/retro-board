@@ -1,13 +1,13 @@
 import { notFound } from 'next/navigation'
 import Board from '@/components/Board'
 import { prisma } from '@/lib/prisma'
-import type { BoardPageData } from '@/types'
+import type { BoardPageData, PreviousSession } from '@/types'
 
 interface BoardPageProps {
   params: Promise<{ id: string }>
 }
 
-// Step 1: walk the previousBoard chain and return ordered board IDs
+// Walk the previousBoard chain and return ordered board IDs
 async function getChain(startId: string): Promise<string[]> {
   const chain: string[] = []
   let currentId: string | null = startId
@@ -36,7 +36,8 @@ async function getBoardData(id: string): Promise<BoardPageData | null> {
 
   if (!board) return null
 
-  const previousCards: unknown[] = []
+  const previousSessions: PreviousSession[] = []
+  const allPreviousCards: unknown[] = []
 
   if (board.previousBoard) {
     const chain = await getChain(board.previousBoard)
@@ -44,30 +45,45 @@ async function getBoardData(id: string): Promise<BoardPageData | null> {
 
     for (let i = 0; i < chain.length; i++) {
       const boardId = chain[i]
-      // Direct previous board: show all action items
-      // Older boards: only unresolved ones
       const isFirst = i === 0
 
-      const rows = await prisma.card.findMany({
-        where: {
-          boardId,
-          column: 'ACTION_ITEMS',
-          ...(isFirst ? {} : { resolved: false }),
-        },
-        include: { reactions: true, linksFrom: true, linksTo: true },
-        orderBy: { createdAt: 'asc' },
-      })
+      const [boardMeta, rows] = await Promise.all([
+        prisma.board.findUnique({ where: { id: boardId }, select: { title: true } }),
+        prisma.card.findMany({
+          where: {
+            boardId,
+            column: 'ACTION_ITEMS',
+            ...(isFirst ? {} : { resolved: false }),
+          },
+          include: { reactions: true, linksFrom: true, linksTo: true },
+          orderBy: { createdAt: 'asc' },
+        }),
+      ])
 
+      const sessionCards: unknown[] = []
       for (const card of rows) {
         if (!seen.has(card.id)) {
           seen.add(card.id)
-          previousCards.push(card)
+          allPreviousCards.push(card)
+          sessionCards.push(card)
         }
+      }
+
+      if (sessionCards.length > 0) {
+        previousSessions.push({
+          boardId,
+          boardTitle: boardMeta?.title ?? boardId.slice(0, 8),
+          cards: sessionCards as never,
+        })
       }
     }
   }
 
-  return { board, previousCards } as unknown as BoardPageData
+  return {
+    board,
+    previousCards: allPreviousCards,
+    previousSessions,
+  } as unknown as BoardPageData
 }
 
 export default async function BoardPage({ params }: BoardPageProps) {

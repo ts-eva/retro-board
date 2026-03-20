@@ -3,21 +3,22 @@
 import { useState } from 'react'
 import * as Collapsible from '@radix-ui/react-collapsible'
 import { motion, AnimatePresence } from 'framer-motion'
-import type { Card } from '@/types'
+import type { Card, PreviousSession } from '@/types'
 
 interface PreviousActionItemsProps {
-  cards: Card[]
+  sessions: PreviousSession[]
   onCardUpdate: (card: Card) => void
 }
 
 export default function PreviousActionItems({
-  cards,
+  sessions,
   onCardUpdate,
 }: PreviousActionItemsProps) {
   const [open, setOpen] = useState(true)
   const [toggling, setToggling] = useState<string | null>(null)
 
-  if (!cards.length) return null
+  const allCards = sessions.flatMap((s) => s.cards)
+  if (!allCards.length) return null
 
   async function toggleResolved(card: Card) {
     if (toggling) return
@@ -39,7 +40,7 @@ export default function PreviousActionItems({
     }
   }
 
-  const unresolvedCount = cards.filter((c) => !c.resolved).length
+  const unresolvedCount = allCards.filter((c) => !c.resolved).length
 
   return (
     <Collapsible.Root
@@ -86,12 +87,10 @@ export default function PreviousActionItems({
                 color: unresolvedCount > 0 ? '#92400e' : '#166534',
               }}
             >
-              {unresolvedCount > 0
-                ? `${unresolvedCount} unresolved`
-                : 'All done!'}
+              {unresolvedCount > 0 ? `${unresolvedCount} unresolved` : 'All done!'}
             </span>
             <span style={{ fontSize: '0.8125rem', color: '#a8a29e', fontWeight: '400' }}>
-              — {cards.length} action item{cards.length !== 1 ? 's' : ''}
+              — {allCards.length} action item{allCards.length !== 1 ? 's' : ''}
             </span>
           </span>
           <span
@@ -123,68 +122,88 @@ export default function PreviousActionItems({
                   padding: '0.75rem',
                   display: 'flex',
                   flexDirection: 'column',
-                  gap: '0.5rem',
+                  gap: '1rem',
                 }}
               >
-                {cards.map((card) => (
-                  <motion.div
-                    key={card.id}
-                    initial={{ opacity: 0, x: -8 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.15 }}
-                    style={{
-                      display: 'flex',
-                      alignItems: 'flex-start',
-                      gap: '0.75rem',
-                      padding: '0.625rem 0.75rem',
-                      borderRadius: '0.5rem',
-                      background: card.resolved ? '#f9fafb' : '#fefce8',
-                      border: `1.5px solid ${card.resolved ? '#f0ede9' : '#fde68a'}`,
-                      opacity: card.resolved ? 0.6 : 1,
-                      transition: 'opacity 0.2s',
-                    }}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={card.resolved}
-                      onChange={() => toggleResolved(card)}
-                      disabled={toggling === card.id}
+                {sessions.map((session) => (
+                  <div key={session.boardId}>
+                    {/* Session label */}
+                    <p
                       style={{
-                        width: '1rem',
-                        height: '1rem',
-                        marginTop: '0.125rem',
-                        cursor: 'pointer',
-                        accentColor: '#7c3aed',
-                        flexShrink: 0,
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        color: '#a8a29e',
+                        margin: '0 0 0.375rem 0.25rem',
+                        letterSpacing: '0.02em',
+                        textTransform: 'uppercase',
                       }}
-                    />
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p
-                        style={{
-                          fontSize: '0.875rem',
-                          lineHeight: '1.5',
-                          color: card.resolved ? '#a8a29e' : '#1c1917',
-                          textDecoration: card.resolved ? 'line-through' : 'none',
-                          margin: 0,
-                          wordBreak: 'break-word',
-                        }}
-                      >
-                        {card.content}
-                      </p>
-                      <p
-                        style={{
-                          fontSize: '0.75rem',
-                          color: '#a8a29e',
-                          margin: '0.25rem 0 0',
-                        }}
-                      >
-                        {card.author}
-                      </p>
+                    >
+                      {session.boardTitle}
+                    </p>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {session.cards.map((card) => (
+                        <motion.div
+                          key={card.id}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.15 }}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'flex-start',
+                            gap: '0.75rem',
+                            padding: '0.625rem 0.75rem',
+                            borderRadius: '0.5rem',
+                            background: card.resolved ? '#f9fafb' : '#fefce8',
+                            border: `1.5px solid ${card.resolved ? '#f0ede9' : '#fde68a'}`,
+                            opacity: card.resolved ? 0.6 : 1,
+                            transition: 'opacity 0.2s',
+                          }}
+                        >
+                          <input
+                            type="checkbox"
+                            checked={card.resolved}
+                            onChange={() => toggleResolved(card)}
+                            disabled={toggling === card.id}
+                            style={{
+                              width: '1rem',
+                              height: '1rem',
+                              marginTop: '0.125rem',
+                              cursor: 'pointer',
+                              accentColor: '#7c3aed',
+                              flexShrink: 0,
+                            }}
+                          />
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <p
+                              style={{
+                                fontSize: '0.875rem',
+                                lineHeight: '1.5',
+                                color: card.resolved ? '#a8a29e' : '#1c1917',
+                                textDecoration: card.resolved ? 'line-through' : 'none',
+                                margin: 0,
+                                wordBreak: 'break-word',
+                              }}
+                            >
+                              {card.content}
+                            </p>
+                            <p
+                              style={{
+                                fontSize: '0.75rem',
+                                color: '#a8a29e',
+                                margin: '0.25rem 0 0',
+                              }}
+                            >
+                              {card.author}
+                            </p>
+                          </div>
+                          {card.resolved && (
+                            <span style={{ fontSize: '0.875rem', flexShrink: 0 }}>✅</span>
+                          )}
+                        </motion.div>
+                      ))}
                     </div>
-                    {card.resolved && (
-                      <span style={{ fontSize: '0.875rem', flexShrink: 0 }}>✅</span>
-                    )}
-                  </motion.div>
+                  </div>
                 ))}
               </div>
             </motion.div>
