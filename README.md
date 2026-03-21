@@ -12,8 +12,10 @@ A lightweight, real-time sprint retrospective tool for engineering teams. No acc
 
 ### Cards
 - Add cards with Enter or the ✓ button
-- Edit in-place by clicking card content
-- Delete on hover
+- Edit in-place by clicking card content (author only)
+- Delete on hover (author only)
+- Mark as **discussed** via the ✓ button in the bottom-right corner — card gets a green tint and muted text; click again to unmark
+- Discussed state syncs to all participants in real time
 - Author name and relative timestamp on each card
 
 ### Reactions
@@ -104,7 +106,7 @@ curl -s "https://your-db-name.turso.io/v2/pipeline" \
   -d '{
     "requests": [
       { "type": "execute", "stmt": { "sql": "CREATE TABLE IF NOT EXISTS Board (id TEXT PRIMARY KEY, title TEXT NOT NULL DEFAULT '\''Sprint Retro'\'', createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, previousBoard TEXT)" } },
-      { "type": "execute", "stmt": { "sql": "CREATE TABLE IF NOT EXISTS Card (id TEXT PRIMARY KEY, boardId TEXT NOT NULL, column TEXT NOT NULL, content TEXT NOT NULL, author TEXT NOT NULL, resolved BOOLEAN NOT NULL DEFAULT 0, createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (boardId) REFERENCES Board(id))" } },
+      { "type": "execute", "stmt": { "sql": "CREATE TABLE IF NOT EXISTS Card (id TEXT PRIMARY KEY, boardId TEXT NOT NULL, column TEXT NOT NULL, content TEXT NOT NULL, author TEXT NOT NULL, resolved BOOLEAN NOT NULL DEFAULT 0, discussed BOOLEAN NOT NULL DEFAULT 0, createdAt DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, FOREIGN KEY (boardId) REFERENCES Board(id))" } },
       { "type": "execute", "stmt": { "sql": "CREATE TABLE IF NOT EXISTS Reaction (id TEXT PRIMARY KEY, cardId TEXT NOT NULL, emoji TEXT NOT NULL, author TEXT NOT NULL, UNIQUE(cardId, emoji, author), FOREIGN KEY (cardId) REFERENCES Card(id) ON DELETE CASCADE)" } },
       { "type": "execute", "stmt": { "sql": "CREATE TABLE IF NOT EXISTS CardLink (id TEXT PRIMARY KEY, fromId TEXT NOT NULL, toId TEXT NOT NULL, FOREIGN KEY (fromId) REFERENCES Card(id) ON DELETE CASCADE, FOREIGN KEY (toId) REFERENCES Card(id) ON DELETE CASCADE)" } },
       { "type": "close" }
@@ -120,6 +122,8 @@ npm run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000).
+
+> **Note:** After any schema change, always run `npx prisma generate` and restart the dev server before testing. The running server caches the old Prisma client and won't pick up new fields until restarted.
 
 ---
 
