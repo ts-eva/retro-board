@@ -284,11 +284,11 @@ export default function Column({
             borderRadius: '0.625rem',
             border: 'none',
             background: !newContent.trim() || submitting || linkMode
-              ? `${meta.color}30`
-              : meta.color,
+              ? `${meta.color}20`
+              : `${meta.color}35`,
             color: !newContent.trim() || submitting || linkMode
-              ? `${meta.color}90`
-              : '#1a202c',
+              ? `${meta.color}60`
+              : meta.color,
             fontSize: '0.875rem',
             cursor: !newContent.trim() || submitting || linkMode
               ? 'not-allowed'
