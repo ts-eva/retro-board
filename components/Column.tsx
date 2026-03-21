@@ -285,7 +285,7 @@ export default function Column({
             border: 'none',
             background: !newContent.trim() || submitting || linkMode
               ? `${meta.color}20`
-              : `${meta.color}35`,
+              : `${meta.color}55`,
             color: !newContent.trim() || submitting || linkMode
               ? `${meta.color}60`
               : meta.color,

@@ -210,7 +210,7 @@ export default function Card({
           borderRadius: '50%',
           border: 'none',
           background: discussed
-            ? columnColor
+            ? `${columnColor}70`
             : hovering
             ? `${columnColor}35`
             : 'transparent',
