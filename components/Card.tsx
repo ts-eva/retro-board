@@ -48,7 +48,6 @@ export default function Card({
 
   const isAuthor = card.author === author
   const discussed = !!card.discussed
-  const discussedGreen = '#7FB5A0'
 
   async function handleToggleDiscussed(e: React.MouseEvent) {
     e.stopPropagation()
@@ -211,13 +210,12 @@ export default function Card({
           borderRadius: '50%',
           border: 'none',
           background: discussed
-            ? discussedGreen
+            ? columnColor
             : hovering
-            ? `${discussedGreen}35`
+            ? `${columnColor}35`
             : 'transparent',
-          color: discussed ? '#fff' : discussedGreen,
-          fontSize: '0.8rem',
-          fontWeight: '700',
+          color: discussed ? '#fff' : columnColor,
+          fontSize: '0.7rem',
           cursor: savingDiscussed ? 'not-allowed' : 'pointer',
           display: 'flex',
           alignItems: 'center',
@@ -228,7 +226,7 @@ export default function Card({
         }}
         title={discussed ? 'Mark as not discussed' : 'Mark as discussed'}
       >
-        ✓
+        ◉
       </button>
 
       {/* Content */}
