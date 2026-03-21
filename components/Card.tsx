@@ -155,12 +155,12 @@ export default function Card({
       onClick={() => { if (linkMode) onSelect() }}
       style={{
         position: 'relative',
-        background: discussed ? '#f7f7f6' : '#fff',
+        background: discussed ? `${columnColor}12` : '#fff',
         borderRadius: '0.875rem',
-        borderTop: `1.5px solid ${isSelected ? columnColor : discussed ? '#e5e5e3' : `${columnColor}30`}`,
-        borderRight: `1.5px solid ${isSelected ? columnColor : discussed ? '#e5e5e3' : `${columnColor}30`}`,
-        borderBottom: `1.5px solid ${isSelected ? columnColor : discussed ? '#e5e5e3' : `${columnColor}30`}`,
-        borderLeft: `4px solid ${discussed ? '#c9c9c6' : columnColor}`,
+        borderTop: `1.5px solid ${isSelected ? columnColor : discussed ? `${columnColor}50` : `${columnColor}30`}`,
+        borderRight: `1.5px solid ${isSelected ? columnColor : discussed ? `${columnColor}50` : `${columnColor}30`}`,
+        borderBottom: `1.5px solid ${isSelected ? columnColor : discussed ? `${columnColor}50` : `${columnColor}30`}`,
+        borderLeft: `4px solid ${discussed ? `${columnColor}80` : columnColor}`,
         boxShadow: hovering
           ? '0 4px 16px rgba(0,0,0,0.07)'
           : '0 1px 4px rgba(0,0,0,0.04)',
@@ -264,7 +264,7 @@ export default function Card({
             style={{
               fontSize: '0.875rem',
               lineHeight: '1.5',
-              color: discussed ? '#6b7280' : '#1c1917',
+              color: discussed ? `${columnColor}cc` : '#1c1917',
               margin: 0,
               cursor: isAuthor && !linkMode ? 'text' : 'default',
               whiteSpace: 'pre-wrap',
