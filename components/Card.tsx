@@ -65,7 +65,6 @@ export default function Card({
         onUpdate(updated)
       }
     } catch {
-      // ignore
     } finally {
       setSavingDiscussed(false)
     }
@@ -158,11 +157,9 @@ export default function Card({
         position: 'relative',
         background: discussed ? '#f0faf6' : '#fff',
         borderRadius: '0.875rem',
-        border: `1.5px solid ${
-          isSelected ? columnColor
-          : discussed ? `${discussedGreen}50`
-          : `${columnColor}30`
-        }`,
+        borderTop: `1.5px solid ${isSelected ? columnColor : discussed ? `${discussedGreen}50` : `${columnColor}30`}`,
+        borderRight: `1.5px solid ${isSelected ? columnColor : discussed ? `${discussedGreen}50` : `${columnColor}30`}`,
+        borderBottom: `1.5px solid ${isSelected ? columnColor : discussed ? `${discussedGreen}50` : `${columnColor}30`}`,
         borderLeft: `4px solid ${discussed ? discussedGreen : columnColor}`,
         boxShadow: hovering
           ? '0 4px 16px rgba(0,0,0,0.07)'
