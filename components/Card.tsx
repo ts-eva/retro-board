@@ -53,6 +53,7 @@ export default function Card({
     e.stopPropagation()
     if (savingDiscussed) return
     setSavingDiscussed(true)
+    onUpdate({ ...card, discussed: !discussed })
     try {
       const res = await fetch(`/api/cards/${card.id}`, {
         method: 'PATCH',
@@ -62,8 +63,11 @@ export default function Card({
       if (res.ok) {
         const updated = await res.json()
         onUpdate(updated)
+      } else {
+        onUpdate(card)
       }
     } catch {
+      onUpdate(card)
     } finally {
       setSavingDiscussed(false)
     }

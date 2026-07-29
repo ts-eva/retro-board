@@ -42,7 +42,7 @@ export default function Board({ initialData }: BoardProps) {
   const [toasts, setToasts] = useState<Toast[]>([])
   const [author, setAuthor] = useState<string>('')
   const [nameConfirmed, setNameConfirmed] = useState(false)
-  const [members, setMembers] = useState<string[]>([])
+  const [members, setMembers] = useState<{ id: string; name: string }[]>([])
   const [timerEnd, setTimerEnd] = useState<number | null>(null)
   const [showCalm, setShowCalm] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
@@ -148,8 +148,8 @@ export default function Board({ initialData }: BoardProps) {
       setLinks((prev) => prev.filter((l) => l.id !== data.linkId))
     })
 
-    channel.bind('timer-started', (data: { endsAt: number }) => {
-      setTimerEnd(data.endsAt)
+    channel.bind('timer-started', (data: { durationMs: number }) => {
+      setTimerEnd(Date.now() + data.durationMs)
     })
 
     channel.bind('timer-stopped', () => {
@@ -184,21 +184,20 @@ export default function Board({ initialData }: BoardProps) {
     const presence = pusher.subscribe(`presence-board-${boardId}`) as PresenceChannel
 
     presence.bind('pusher:subscription_succeeded', (data: { members: Record<string, { name: string }> }) => {
-      const names = Object.values(data.members).map((m) => m.name)
-      setMembers(names)
+      setMembers(Object.entries(data.members).map(([id, m]) => ({ id, name: m.name })))
     })
 
-    presence.bind('pusher:member_added', (member: { info: { name: string } }) => {
-      setMembers((prev) => [...prev, member.info.name])
+    presence.bind('pusher:member_added', (member: { id: string; info: { name: string } }) => {
+      setMembers((prev) => [...prev, { id: member.id, name: member.info.name }])
       showToast(`${member.info.name} joined`)
     })
 
-    presence.bind('pusher:member_removed', (member: { info: { name: string } }) => {
-      setMembers((prev) => {
-        const idx = prev.indexOf(member.info.name)
-        if (idx === -1) return prev
-        return [...prev.slice(0, idx), ...prev.slice(idx + 1)]
-      })
+    presence.bind('pusher:member_removed', (member: { id: string; info: { name: string } }) => {
+      setMembers((prev) => prev.filter((m) => m.id !== member.id))
+    })
+
+    presence.bind('pusher:subscription_error', (status: unknown) => {
+      console.error('Presence subscription failed', status)
     })
 
     return () => {
@@ -273,7 +272,7 @@ export default function Board({ initialData }: BoardProps) {
   const boardIdLabel = board.id.slice(0, 8) + '…'
 
   // Members excluding current user
-  const otherMembers = members.filter((n) => n !== author)
+  const otherMembers = members.filter((m) => m.name !== author)
 
   return (
     <div
@@ -345,15 +344,15 @@ export default function Board({ initialData }: BoardProps) {
           {/* Presence: other members */}
           {otherMembers.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
-              {otherMembers.slice(0, 5).map((name) => (
+              {otherMembers.slice(0, 5).map((m) => (
                 <div
-                  key={name}
-                  title={name}
+                  key={m.id}
+                  title={m.name}
                   style={{
                     width: '1.75rem',
                     height: '1.75rem',
                     borderRadius: '9999px',
-                    background: nameToColor(name),
+                    background: nameToColor(m.name),
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
@@ -367,7 +366,7 @@ export default function Board({ initialData }: BoardProps) {
                     cursor: 'default',
                   }}
                 >
-                  {initials(name)}
+                  {initials(m.name)}
                 </div>
               ))}
               {otherMembers.length > 5 && (

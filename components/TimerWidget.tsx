@@ -40,12 +40,12 @@ export default function TimerWidget({ boardId, timerEnd, onStart, onStop }: Time
   async function handleStart() {
     const mins = parseFloat(minutes)
     if (!mins || mins <= 0) return
-    const endsAt = Date.now() + mins * 60 * 1000
-    onStart(endsAt)
+    const durationMs = mins * 60 * 1000
+    onStart(Date.now() + durationMs)
     await fetch('/api/timer', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ boardId, endsAt }),
+      body: JSON.stringify({ boardId, durationMs }),
     })
   }
 

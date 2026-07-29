@@ -2,8 +2,8 @@ import { pusher } from '@/lib/pusher'
 import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(req: NextRequest) {
-  const { boardId, endsAt } = await req.json()
-  await pusher.trigger(`board-${boardId}`, 'timer-started', { endsAt }).catch(() => {})
+  const { boardId, durationMs } = await req.json()
+  await pusher.trigger(`board-${boardId}`, 'timer-started', { durationMs }).catch(() => {})
   return NextResponse.json({ ok: true })
 }
 
