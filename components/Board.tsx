@@ -198,6 +198,33 @@ export default function Board({ initialData }: BoardProps) {
     }
   }, [boardId])
 
+  // Action items carried over from previous retros live on their *original*
+  // board's channel, not this one — subscribe to those too so resolving them
+  // shows up live for everyone on this board.
+  useEffect(() => {
+    const previousBoardIds = Array.from(
+      new Set(initialSessions.map((s) => s.boardId))
+    ).filter((id) => id !== boardId)
+    if (previousBoardIds.length === 0) return
+
+    const pusher = getPusherClient()
+    const channels = previousBoardIds.map((id) => pusher.subscribe(`board-${id}`))
+
+    function handleCardUpdated(data: { card: Card }) {
+      handleCardUpdate(data.card)
+    }
+
+    channels.forEach((ch) => ch.bind('card-updated', handleCardUpdated))
+
+    return () => {
+      channels.forEach((ch) => {
+        ch.unbind('card-updated', handleCardUpdated)
+        pusher.unsubscribe(ch.name)
+      })
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boardId, initialSessions])
+
   // Trigger calming overlay when timer expires
   useEffect(() => {
     if (timerEnd === null) return
