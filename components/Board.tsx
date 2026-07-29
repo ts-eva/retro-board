@@ -46,7 +46,9 @@ export default function Board({ initialData }: BoardProps) {
   const [members, setMembers] = useState<{ id: string; name: string }[]>([])
   const [timerEnd, setTimerEnd] = useState<number | null>(null)
   const [fmEnabled, setFmEnabled] = useState(false)
+  const [fmPanelOpen, setFmPanelOpen] = useState(false)
   const [fmStation, setFmStation] = useState<string>(STATIONS[0].id)
+  const fmRef = useRef<HTMLDivElement>(null)
   const [showCalm, setShowCalm] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -76,12 +78,20 @@ export default function Board({ initialData }: BoardProps) {
     }
   }, [])
 
-  function toggleFm() {
-    setFmEnabled((prev) => {
-      const next = !prev
-      localStorage.setItem('retro-claude-fm', String(next))
-      return next
-    })
+  function handleFmButtonClick() {
+    if (!fmEnabled) {
+      setFmEnabled(true)
+      localStorage.setItem('retro-claude-fm', 'true')
+      setFmPanelOpen(true)
+    } else {
+      setFmPanelOpen((o) => !o)
+    }
+  }
+
+  function turnOffFm() {
+    setFmEnabled(false)
+    localStorage.setItem('retro-claude-fm', 'false')
+    setFmPanelOpen(false)
   }
 
   function handleStationChange(id: string) {
@@ -243,6 +253,18 @@ export default function Board({ initialData }: BoardProps) {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [menuOpen])
+
+  // Close Claude FM panel on outside click — music keeps playing, only the panel hides
+  useEffect(() => {
+    if (!fmPanelOpen) return
+    function handleClick(e: MouseEvent) {
+      if (fmRef.current && !fmRef.current.contains(e.target as Node)) {
+        setFmPanelOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handleClick)
+    return () => document.removeEventListener('mousedown', handleClick)
+  }, [fmPanelOpen])
 
   const handleSelectCard = useCallback(
     async (cardId: string) => {
@@ -424,49 +446,83 @@ export default function Board({ initialData }: BoardProps) {
             </div>
           )}
 
-          {/* Claude FM — opt-in lofi radio */}
-          <button
-            onClick={toggleFm}
-            title={fmEnabled ? 'Turn off Claude FM' : 'Turn on Claude FM'}
-            style={{
-              padding: '0.375rem 0.625rem',
-              borderRadius: '0.5rem',
-              border: '1.5px solid #e7e5e4',
-              background: fmEnabled ? '#faf5ff' : '#fff',
-              fontSize: '0.875rem',
-              cursor: 'pointer',
-              color: fmEnabled ? '#6d28d9' : '#44403c',
-              flexShrink: 0,
-            }}
-          >
-            📻
-          </button>
-          {fmEnabled && (
-            <>
-              <select
-                value={fmStation}
-                onChange={(e) => handleStationChange(e.target.value)}
-                title="Choose station"
+          {/* Claude FM — opt-in lofi radio, floats so it doesn't stretch the header */}
+          <div ref={fmRef} style={{ position: 'relative' }}>
+            <button
+              onClick={handleFmButtonClick}
+              title={fmEnabled ? 'Claude FM controls' : 'Turn on Claude FM'}
+              style={{
+                padding: '0.375rem 0.625rem',
+                borderRadius: '0.5rem',
+                border: '1.5px solid #e7e5e4',
+                background: fmEnabled ? '#faf5ff' : '#fff',
+                fontSize: '0.875rem',
+                cursor: 'pointer',
+                color: fmEnabled ? '#6d28d9' : '#44403c',
+                flexShrink: 0,
+              }}
+            >
+              📻
+            </button>
+            {fmEnabled && (
+              <div
                 style={{
-                  padding: '0.375rem 0.5rem',
-                  borderRadius: '0.5rem',
-                  border: '1.5px solid #e7e5e4',
+                  position: 'absolute',
+                  top: 'calc(100% + 0.5rem)',
+                  right: 0,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.625rem',
                   background: '#fff',
-                  fontSize: '0.8125rem',
-                  color: '#44403c',
-                  cursor: 'pointer',
-                  flexShrink: 0,
+                  border: '1.5px solid #e7e5e4',
+                  borderRadius: '0.75rem',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.1)',
+                  zIndex: 30,
+                  opacity: fmPanelOpen ? 1 : 0,
+                  pointerEvents: fmPanelOpen ? 'auto' : 'none',
+                  transition: 'opacity 0.1s',
                 }}
               >
-                {STATIONS.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.label}
-                  </option>
-                ))}
-              </select>
-              <ClaudeFmPlayer videoId={fmStation} playing />
-            </>
-          )}
+                <select
+                  value={fmStation}
+                  onChange={(e) => handleStationChange(e.target.value)}
+                  title="Choose station"
+                  style={{
+                    width: '120px',
+                    padding: '0.375rem 0.5rem',
+                    borderRadius: '0.5rem',
+                    border: '1.5px solid #e7e5e4',
+                    background: '#fff',
+                    fontSize: '0.8125rem',
+                    color: '#44403c',
+                    cursor: 'pointer',
+                  }}
+                >
+                  {STATIONS.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      {s.label}
+                    </option>
+                  ))}
+                </select>
+                <ClaudeFmPlayer videoId={fmStation} playing />
+                <button
+                  onClick={turnOffFm}
+                  style={{
+                    fontSize: '0.75rem',
+                    color: '#a8a29e',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '0.125rem',
+                  }}
+                >
+                  Turn off
+                </button>
+              </div>
+            )}
+          </div>
 
           {/* Timer */}
           <TimerWidget
