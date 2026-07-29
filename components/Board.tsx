@@ -11,6 +11,7 @@ import PreviousActionItems from './PreviousActionItems'
 import UserBadge from './UserBadge'
 import NameModal from './NameModal'
 import TimerWidget from './TimerWidget'
+import ClaudeFmPlayer, { STATIONS } from './ClaudeFmPlayer'
 import type { Board as BoardType, BoardPageData, Card, CardLink, ColumnType } from '@/types'
 
 const COLUMNS: ColumnType[] = ['WENT_WELL', 'WENT_POORLY', 'IDEAS', 'ACTION_ITEMS']
@@ -44,6 +45,8 @@ export default function Board({ initialData }: BoardProps) {
   const [nameConfirmed, setNameConfirmed] = useState(false)
   const [members, setMembers] = useState<{ id: string; name: string }[]>([])
   const [timerEnd, setTimerEnd] = useState<number | null>(null)
+  const [fmEnabled, setFmEnabled] = useState(false)
+  const [fmStation, setFmStation] = useState<string>(STATIONS[0].id)
   const [showCalm, setShowCalm] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -62,6 +65,29 @@ export default function Board({ initialData }: BoardProps) {
       setNameConfirmed(true)
     }
   }, [])
+
+  // Claude FM preference — remembered per-browser, off by default
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    setFmEnabled(localStorage.getItem('retro-claude-fm') === 'true')
+    const storedStation = localStorage.getItem('retro-claude-fm-station')
+    if (storedStation && STATIONS.some((s) => s.id === storedStation)) {
+      setFmStation(storedStation)
+    }
+  }, [])
+
+  function toggleFm() {
+    setFmEnabled((prev) => {
+      const next = !prev
+      localStorage.setItem('retro-claude-fm', String(next))
+      return next
+    })
+  }
+
+  function handleStationChange(id: string) {
+    setFmStation(id)
+    localStorage.setItem('retro-claude-fm-station', id)
+  }
 
   function handleNameConfirm(name: string) {
     setAuthor(name)
@@ -269,6 +295,8 @@ export default function Board({ initialData }: BoardProps) {
     cardColumnMap[card.id] = card.column
   }
 
+  const discussedCount = cards.filter((c) => c.discussed).length
+
   const boardIdLabel = board.id.slice(0, 8) + '…'
 
   // Members excluding current user
@@ -341,6 +369,25 @@ export default function Board({ initialData }: BoardProps) {
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flexShrink: 0 }}>
+          {/* Discussed progress */}
+          {cards.length > 0 && (
+            <span
+              title="Cards marked as discussed"
+              style={{
+                fontSize: '0.75rem',
+                fontWeight: '600',
+                color: '#78716c',
+                fontFamily: 'var(--font-geist-mono), monospace',
+                background: '#f5f5f4',
+                padding: '0.25rem 0.5rem',
+                borderRadius: '0.375rem',
+                flexShrink: 0,
+              }}
+            >
+              {discussedCount}/{cards.length} discussed
+            </span>
+          )}
+
           {/* Presence: other members */}
           {otherMembers.length > 0 && (
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
@@ -375,6 +422,50 @@ export default function Board({ initialData }: BoardProps) {
                 </span>
               )}
             </div>
+          )}
+
+          {/* Claude FM — opt-in lofi radio */}
+          <button
+            onClick={toggleFm}
+            title={fmEnabled ? 'Turn off Claude FM' : 'Turn on Claude FM'}
+            style={{
+              padding: '0.375rem 0.625rem',
+              borderRadius: '0.5rem',
+              border: '1.5px solid #e7e5e4',
+              background: fmEnabled ? '#faf5ff' : '#fff',
+              fontSize: '0.875rem',
+              cursor: 'pointer',
+              color: fmEnabled ? '#6d28d9' : '#44403c',
+              flexShrink: 0,
+            }}
+          >
+            📻
+          </button>
+          {fmEnabled && (
+            <>
+              <select
+                value={fmStation}
+                onChange={(e) => handleStationChange(e.target.value)}
+                title="Choose station"
+                style={{
+                  padding: '0.375rem 0.5rem',
+                  borderRadius: '0.5rem',
+                  border: '1.5px solid #e7e5e4',
+                  background: '#fff',
+                  fontSize: '0.8125rem',
+                  color: '#44403c',
+                  cursor: 'pointer',
+                  flexShrink: 0,
+                }}
+              >
+                {STATIONS.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+              <ClaudeFmPlayer videoId={fmStation} playing />
+            </>
           )}
 
           {/* Timer */}
