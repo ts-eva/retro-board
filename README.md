@@ -27,6 +27,15 @@ A lightweight, real-time sprint retrospective tool for engineering teams. No acc
 - Live avatar circles in the header show who else is on the board
 - Toast notification when someone joins or leaves
 
+### Discussed Progress
+- Header badge shows `N/M discussed` — live count of discussed cards vs. total, synced across all participants
+
+### Claude FM
+- Opt-in lofi radio (📻 button in header) — turns on a persistent, retro-TV-styled YouTube player with pastel frame
+- Station picker: Claude FM, Office Shrimp, Alter Pavilion, Chinese LoFi
+- Volume slider, remembered per-browser via localStorage
+- Click the radio button again to open/close the popover; "Turn off" stops playback
+
 ### Timer
 - Anyone can start a shared countdown (any number of minutes)
 - All participants see the same synchronized countdown
@@ -38,6 +47,7 @@ A lightweight, real-time sprint retrospective tool for engineering teams. No acc
 - Items are grouped by source session with the board title as a label
 - Check items off as resolved — updates sync in real time
 - Chain walks back multiple sessions: only unresolved items carry past the most recent board
+- Checked-off state syncs live across all boards in the chain
 
 ### Menu (☰)
 - **Copy ID** — copies the board ID for use in the next session's "continue from" field
