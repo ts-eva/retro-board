@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 
 export const STATIONS = [
   { id: 'tRsQsTMvPNg', label: 'Claude FM' },
-  { id: 'W8XhWDIQp0g', label: 'Office Shrimp' },
+  { id: 'zBdruS7aZac', label: 'Coffee Cat' },
   { id: 'rV6orDrFA1o', label: 'Alter Pavilion' },
   { id: 'bVO3MmEwXTI', label: 'Chinese LoFi' },
 ] as const

@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { motion } from 'framer-motion'
+import { CommentToggleButton, CommentPanel } from './CommentThread'
 import type { Card as CardType, Reaction } from '@/types'
 
 const EMOJIS = ['👍', '❤️', '🔥', '💡'] as const
@@ -45,6 +46,7 @@ export default function Card({
   const [hovering, setHovering] = useState(false)
   const [savingReaction, setSavingReaction] = useState<string | null>(null)
   const [savingDiscussed, setSavingDiscussed] = useState(false)
+  const [showComments, setShowComments] = useState(false)
 
   const isAuthor = card.author === author
   const discussed = !!card.discussed
@@ -316,7 +318,20 @@ export default function Card({
               </button>
             )
           })}
+
+          <div style={{ width: '1px', alignSelf: 'stretch', background: `${columnColor}25`, margin: '0 0.125rem' }} />
+
+          <CommentToggleButton
+            count={card.comments.length}
+            active={showComments}
+            accentColor={columnColor}
+            onClick={(e) => { e.stopPropagation(); setShowComments((s) => !s) }}
+          />
         </div>
+
+        {showComments && (
+          <CommentPanel card={card} author={author} accentColor={columnColor} onUpdate={onUpdate} />
+        )}
       </div>
     </motion.div>
   )

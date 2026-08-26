@@ -12,7 +12,7 @@ import UserBadge from './UserBadge'
 import NameModal from './NameModal'
 import TimerWidget from './TimerWidget'
 import ClaudeFmPlayer, { STATIONS } from './ClaudeFmPlayer'
-import type { Board as BoardType, BoardPageData, Card, CardLink, ColumnType } from '@/types'
+import type { Board as BoardType, BoardPageData, Card, CardLink, Comment, ColumnType } from '@/types'
 
 const COLUMNS: ColumnType[] = ['WENT_WELL', 'WENT_POORLY', 'IDEAS', 'ACTION_ITEMS']
 
@@ -46,6 +46,7 @@ export default function Board({ initialData }: BoardProps) {
   const [members, setMembers] = useState<{ id: string; name: string }[]>([])
   const [timerEnd, setTimerEnd] = useState<number | null>(null)
   const [fmEnabled, setFmEnabled] = useState(false)
+  const [fmPlaying, setFmPlaying] = useState(false)
   const [fmPanelOpen, setFmPanelOpen] = useState(false)
   const [fmStation, setFmStation] = useState<string>(STATIONS[0].id)
   const fmRef = useRef<HTMLDivElement>(null)
@@ -83,6 +84,7 @@ export default function Board({ initialData }: BoardProps) {
       setFmEnabled(true)
       localStorage.setItem('retro-claude-fm', 'true')
       setFmPanelOpen(true)
+      setFmPlaying(true) // explicit click — fine to start audio here
     } else {
       setFmPanelOpen((o) => !o)
     }
@@ -92,6 +94,7 @@ export default function Board({ initialData }: BoardProps) {
     setFmEnabled(false)
     localStorage.setItem('retro-claude-fm', 'false')
     setFmPanelOpen(false)
+    setFmPlaying(false)
   }
 
   function handleStationChange(id: string) {
@@ -173,6 +176,26 @@ export default function Board({ initialData }: BoardProps) {
       }
     )
 
+    channel.bind('comment-added', (data: { comment: Card['comments'][number] }) => {
+      setCards((prev) =>
+        prev.map((c) =>
+          c.id === data.comment.cardId && !c.comments.find((cm) => cm.id === data.comment.id)
+            ? { ...c, comments: [...c.comments, data.comment] }
+            : c
+        )
+      )
+    })
+
+    channel.bind('comment-deleted', (data: { cardId: string; commentIds: string[] }) => {
+      setCards((prev) =>
+        prev.map((c) =>
+          c.id === data.cardId
+            ? { ...c, comments: c.comments.filter((cm) => !data.commentIds.includes(cm.id)) }
+            : c
+        )
+      )
+    })
+
     channel.bind('link-added', (data: { link: CardLink }) => {
       setLinks((prev) => {
         if (prev.find((l) => l.id === data.link.id)) return prev
@@ -214,11 +237,39 @@ export default function Board({ initialData }: BoardProps) {
       handleCardUpdate(data.card)
     }
 
-    channels.forEach((ch) => ch.bind('card-updated', handleCardUpdated))
+    function mergeComment(cardId: string, comment: Comment) {
+      const patch = (c: Card) =>
+        c.id === cardId && !c.comments.find((cm) => cm.id === comment.id)
+          ? { ...c, comments: [...c.comments, comment] }
+          : c
+      setPreviousCards((prev) => prev.map(patch))
+      setPreviousSessions((prev) => prev.map((s) => ({ ...s, cards: s.cards.map(patch) })))
+    }
+
+    function handleCommentAdded(data: { comment: Comment }) {
+      mergeComment(data.comment.cardId, data.comment)
+    }
+
+    function handleCommentDeleted(data: { cardId: string; commentIds: string[] }) {
+      const patch = (c: Card) =>
+        c.id === data.cardId
+          ? { ...c, comments: c.comments.filter((cm) => !data.commentIds.includes(cm.id)) }
+          : c
+      setPreviousCards((prev) => prev.map(patch))
+      setPreviousSessions((prev) => prev.map((s) => ({ ...s, cards: s.cards.map(patch) })))
+    }
+
+    channels.forEach((ch) => {
+      ch.bind('card-updated', handleCardUpdated)
+      ch.bind('comment-added', handleCommentAdded)
+      ch.bind('comment-deleted', handleCommentDeleted)
+    })
 
     return () => {
       channels.forEach((ch) => {
         ch.unbind('card-updated', handleCardUpdated)
+        ch.unbind('comment-added', handleCommentAdded)
+        ch.unbind('comment-deleted', handleCommentDeleted)
         pusher.unsubscribe(ch.name)
       })
     }
@@ -533,7 +584,20 @@ export default function Board({ initialData }: BoardProps) {
                     </option>
                   ))}
                 </select>
-                <ClaudeFmPlayer videoId={fmStation} playing />
+                <ClaudeFmPlayer videoId={fmStation} playing={fmPlaying} />
+                <button
+                  onClick={() => setFmPlaying((p) => !p)}
+                  style={{
+                    fontSize: '0.75rem',
+                    color: '#6d28d9',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '0.125rem',
+                  }}
+                >
+                  {fmPlaying ? 'Pause' : 'Play'}
+                </button>
                 <button
                   onClick={turnOffFm}
                   style={{
@@ -704,6 +768,7 @@ export default function Board({ initialData }: BoardProps) {
         {previousSessions.length > 0 && (
           <PreviousActionItems
             sessions={previousSessions}
+            author={author}
             onCardUpdate={handleCardUpdate}
           />
         )}

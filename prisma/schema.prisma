@@ -29,6 +29,7 @@ model Card {
   reactions Reaction[]
   linksFrom CardLink[] @relation("LinkFrom")
   linksTo   CardLink[] @relation("LinkTo")
+  comments  Comment[]
 }
 
 model Reaction {
@@ -46,4 +47,16 @@ model CardLink {
   toId     String
   fromCard Card   @relation("LinkFrom", fields: [fromId], references: [id], onDelete: Cascade)
   toCard   Card   @relation("LinkTo", fields: [toId], references: [id], onDelete: Cascade)
+}
+
+model Comment {
+  id        String   @id @default(cuid())
+  cardId    String
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  // One level deep: parentId points at a top-level comment, no FK — depth is
+  // enforced by the UI only offering "reply" on top-level comments.
+  parentId  String?
+  author    String
+  content   String
+  createdAt DateTime @default(now())
 }

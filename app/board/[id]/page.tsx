@@ -28,7 +28,7 @@ async function getBoardData(id: string): Promise<BoardPageData | null> {
     where: { id },
     include: {
       cards: {
-        include: { reactions: true, linksFrom: true, linksTo: true },
+        include: { reactions: true, linksFrom: true, linksTo: true, comments: { orderBy: { createdAt: 'asc' } } },
         orderBy: { createdAt: 'asc' },
       },
     },
@@ -55,7 +55,7 @@ async function getBoardData(id: string): Promise<BoardPageData | null> {
             column: 'ACTION_ITEMS',
             ...(isFirst ? {} : { resolved: false }),
           },
-          include: { reactions: true, linksFrom: true, linksTo: true },
+          include: { reactions: true, linksFrom: true, linksTo: true, comments: { orderBy: { createdAt: 'asc' } } },
           orderBy: { createdAt: 'asc' },
         }),
       ])

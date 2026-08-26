@@ -13,6 +13,15 @@ export interface CardLink {
   toId: string
 }
 
+export interface Comment {
+  id: string
+  cardId: string
+  parentId: string | null
+  author: string
+  content: string
+  createdAt: string
+}
+
 export interface Card {
   id: string
   boardId: string
@@ -25,6 +34,7 @@ export interface Card {
   reactions: Reaction[]
   linksFrom: CardLink[]
   linksTo: CardLink[]
+  comments: Comment[]
 }
 
 export interface Board {

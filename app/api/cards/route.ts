@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
         reactions: true,
         linksFrom: true,
         linksTo: true,
+        comments: { orderBy: { createdAt: 'asc' } },
       },
     })
 

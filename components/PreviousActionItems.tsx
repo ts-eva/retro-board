@@ -3,19 +3,34 @@
 import { useState } from 'react'
 import * as Collapsible from '@radix-ui/react-collapsible'
 import { motion, AnimatePresence } from 'framer-motion'
+import { CommentToggleButton, CommentPanel } from './CommentThread'
 import type { Card, PreviousSession } from '@/types'
+
+const ACCENT = '#8A9CC7' // matches the Action Items column color
 
 interface PreviousActionItemsProps {
   sessions: PreviousSession[]
+  author: string
   onCardUpdate: (card: Card) => void
 }
 
 export default function PreviousActionItems({
   sessions,
+  author,
   onCardUpdate,
 }: PreviousActionItemsProps) {
   const [open, setOpen] = useState(true)
   const [toggling, setToggling] = useState<string | null>(null)
+  const [openThreads, setOpenThreads] = useState<Set<string>>(new Set())
+
+  function toggleThread(cardId: string) {
+    setOpenThreads((prev) => {
+      const next = new Set(prev)
+      if (next.has(cardId)) next.delete(cardId)
+      else next.add(cardId)
+      return next
+    })
+  }
 
   const allCards = sessions.flatMap((s) => s.cards)
   if (!allCards.length) return null
@@ -187,15 +202,34 @@ export default function PreviousActionItems({
                             >
                               {card.content}
                             </p>
-                            <p
+                            <div
                               style={{
-                                fontSize: '0.75rem',
-                                color: '#a8a29e',
-                                margin: '0.25rem 0 0',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                margin: '0.375rem 0 0',
                               }}
                             >
-                              {card.author}
-                            </p>
+                              <p style={{ fontSize: '0.75rem', color: '#a8a29e', margin: 0 }}>
+                                {card.author}
+                              </p>
+                              <CommentToggleButton
+                                count={card.comments.length}
+                                active={openThreads.has(card.id)}
+                                accentColor={ACCENT}
+                                onClick={() => toggleThread(card.id)}
+                              />
+                            </div>
+                            {openThreads.has(card.id) && (
+                              <div style={{ marginTop: '0.5rem' }}>
+                                <CommentPanel
+                                  card={card}
+                                  author={author}
+                                  accentColor={ACCENT}
+                                  onUpdate={onCardUpdate}
+                                />
+                              </div>
+                            )}
                           </div>
                           {card.resolved && (
                             <span style={{ fontSize: '0.875rem', flexShrink: 0 }}>✅</span>
